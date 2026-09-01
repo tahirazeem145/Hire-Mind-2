@@ -5,14 +5,38 @@ import { useState, useId, useEffect } from "react";
 import { Slot } from "@radix-ui/react-slot";
 import * as LabelPrimitive from "@radix-ui/react-label";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Eye, EyeOff, Sparkles, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, Sparkles, ShieldCheck, Loader2, AlertCircle } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { InteractiveCharacter } from "@/components/ui/interactive-character";
 import { InteractiveDotGrid } from "@/components/ui/interactive-dot-grid";
+import { useAuth } from "@/context/AuthContext";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+function formatAuthError(error: unknown): string {
+  if (typeof error !== "object" || !error) return "An unexpected error occurred. Please try again.";
+  const err = error as { code?: string; message?: string };
+  switch (err.code) {
+    case "auth/invalid-credential":
+    case "auth/wrong-password":
+    case "auth/user-not-found":
+      return "Invalid email or password. Please verify and try again.";
+    case "auth/email-already-in-use":
+      return "This email is already registered. Please sign in instead.";
+    case "auth/weak-password":
+      return "Password is too weak. Please use at least 6 characters.";
+    case "auth/invalid-email":
+      return "Please enter a valid email address.";
+    case "auth/popup-closed-by-user":
+      return "Google sign-in window was closed.";
+    case "auth/network-request-failed":
+      return "Network error. Please check your connection.";
+    default:
+      return err.message || "Failed to authenticate. Please try again.";
+  }
 }
 
 export interface TypewriterProps {
@@ -142,6 +166,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 Button.displayName = "Button";
 
+export { Button, Label, Input, PasswordInput };
+
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
     return (
@@ -228,9 +254,24 @@ function SignInForm({
   onPasswordVisibilityChange,
   onButtonHoverChange,
 }: FormProps) {
-  const handleSignIn = (event: React.FormEvent<HTMLFormElement>) => {
+  const { signIn } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    console.log("UI: Sign In form submitted");
+    setErrorMsg(null);
+    setIsLoading(true);
+
+    try {
+      await signIn(email, password);
+    } catch (err) {
+      setErrorMsg(formatAuthError(err));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -246,6 +287,14 @@ function SignInForm({
           Enter your email below to sign in
         </p>
       </div>
+
+      {errorMsg && (
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs leading-relaxed animate-in fade-in">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
       <div className="grid gap-4">
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
@@ -256,6 +305,8 @@ function SignInForm({
             placeholder="m@example.com"
             required
             autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             onFocus={() => onEmailFocusChange(true)}
             onBlur={() => onEmailFocusChange(false)}
           />
@@ -273,18 +324,28 @@ function SignInForm({
             required
             autoComplete="current-password"
             placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             onFocusChange={onPasswordFocusChange}
             onVisibilityChange={onPasswordVisibilityChange}
           />
         </div>
         <Button
           type="submit"
+          disabled={isLoading}
           variant="default"
           className="mt-2 h-11 w-full font-medium shadow-md"
           onMouseEnter={() => onButtonHoverChange(true)}
           onMouseLeave={() => onButtonHoverChange(false)}
         >
-          Sign In
+          {isLoading ? (
+            <span className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Authenticating...</span>
+            </span>
+          ) : (
+            "Sign In"
+          )}
         </Button>
       </div>
     </form>
@@ -297,9 +358,25 @@ function SignUpForm({
   onPasswordVisibilityChange,
   onButtonHoverChange,
 }: FormProps) {
-  const handleSignUp = (event: React.FormEvent<HTMLFormElement>) => {
+  const { signUp } = useAuth();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    console.log("UI: Sign Up form submitted");
+    setErrorMsg(null);
+    setIsLoading(true);
+
+    try {
+      await signUp(name, email, password);
+    } catch (err) {
+      setErrorMsg(formatAuthError(err));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -315,10 +392,27 @@ function SignUpForm({
           Enter your details below to sign up
         </p>
       </div>
+
+      {errorMsg && (
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs leading-relaxed animate-in fade-in">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
       <div className="grid gap-4">
         <div className="grid gap-1">
           <Label htmlFor="name">Full Name</Label>
-          <Input id="name" name="name" type="text" placeholder="John Doe" required autoComplete="name" />
+          <Input
+            id="name"
+            name="name"
+            type="text"
+            placeholder="John Doe"
+            required
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="email-signup">Email</Label>
@@ -329,6 +423,8 @@ function SignUpForm({
             placeholder="m@example.com"
             required
             autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             onFocus={() => onEmailFocusChange(true)}
             onBlur={() => onEmailFocusChange(false)}
           />
@@ -340,17 +436,27 @@ function SignUpForm({
           required
           autoComplete="new-password"
           placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           onFocusChange={onPasswordFocusChange}
           onVisibilityChange={onPasswordVisibilityChange}
         />
         <Button
           type="submit"
+          disabled={isLoading}
           variant="default"
           className="mt-2 h-11 w-full font-medium shadow-md"
           onMouseEnter={() => onButtonHoverChange(true)}
           onMouseLeave={() => onButtonHoverChange(false)}
         >
-          Sign Up
+          {isLoading ? (
+            <span className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Creating Account...</span>
+            </span>
+          ) : (
+            "Sign Up"
+          )}
         </Button>
       </div>
     </form>
@@ -372,6 +478,22 @@ function AuthFormContainer({
   onPasswordVisibilityChange: (visible: boolean) => void;
   onButtonHoverChange: (hovered: boolean) => void;
 }) {
+  const { signInWithGoogle } = useAuth();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
+
+  const handleGoogleAuth = async () => {
+    setGoogleError(null);
+    setIsGoogleLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch (err) {
+      setGoogleError(formatAuthError(err));
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
   return (
     <div className="relative w-full max-w-[420px]">
       {/* Decorative ambient card glow */}
@@ -396,6 +518,13 @@ function AuthFormContainer({
             />
           )}
 
+          {googleError && (
+            <div className="flex items-center gap-2 p-2.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{googleError}</span>
+            </div>
+          )}
+
           <div className="text-center text-sm">
             {isSignIn ? "Don't have an account?" : "Already have an account?"}{" "}
             <Button variant="link" className="pl-1 text-foreground font-semibold" onClick={onToggle}>
@@ -412,17 +541,27 @@ function AuthFormContainer({
           <Button
             variant="outline"
             type="button"
+            disabled={isGoogleLoading}
             className="h-11 w-full border-border/80 hover:bg-accent/80 transition-all shadow-sm"
-            onClick={() => console.log("UI: Google button clicked")}
+            onClick={handleGoogleAuth}
             onMouseEnter={() => onButtonHoverChange(true)}
             onMouseLeave={() => onButtonHoverChange(false)}
           >
-            <img
-              src="https://www.svgrepo.com/show/475656/google-color.svg"
-              alt="Google icon"
-              className="mr-2 h-4 w-4"
-            />
-            Continue with Google
+            {isGoogleLoading ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Connecting Google...</span>
+              </span>
+            ) : (
+              <>
+                <img
+                  src="https://www.svgrepo.com/show/475656/google-color.svg"
+                  alt="Google icon"
+                  className="mr-2 h-4 w-4"
+                />
+                <span>Continue with Google</span>
+              </>
+            )}
           </Button>
 
           {/* Security badge footer */}
