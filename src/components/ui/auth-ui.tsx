@@ -254,23 +254,23 @@ interface AuthUIProps {
 
 const defaultSignInContent = {
     image: {
-        src: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80",
-        alt: "A beautiful interior design for sign-in"
+        src: "/character.png",
+        alt: "HireMind AI Companion"
     },
     quote: {
         text: "Welcome Back! The journey continues.",
-        author: "EaseMize UI"
+        author: "HireMind AI"
     }
 };
 
 const defaultSignUpContent = {
     image: {
-        src: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
-        alt: "A vibrant, modern space for new beginnings"
+        src: "/character.png",
+        alt: "HireMind AI Companion"
     },
     quote: {
         text: "Create an account. A new chapter awaits.",
-        author: "EaseMize UI"
+        author: "HireMind AI"
     }
 };
 
@@ -297,31 +297,43 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
           display: none;
         }
       `}</style>
+      
+      {/* Left Column: Form */}
       <div className="flex h-screen items-center justify-center p-6 md:h-auto md:p-0 md:py-12">
         <AuthFormContainer isSignIn={isSignIn} onToggle={toggleForm} />
       </div>
 
+      {/* Right Column: Character without background */}
       <div
-        className="hidden md:block relative bg-cover bg-center transition-all duration-500 ease-in-out"
-        style={{ backgroundImage: `url(${currentContent.image.src})` }}
-        key={currentContent.image.src}
+        className="hidden md:flex relative flex-col items-center justify-center p-8 bg-muted/20 dark:bg-card/30 border-l border-border/40 transition-colors duration-500 overflow-hidden"
       >
+        {/* Subtle ambient light glow behind the character */}
+        <div className="absolute w-72 h-72 rounded-full bg-amber-400/10 dark:bg-yellow-400/10 blur-3xl pointer-events-none" />
 
-        <div className="absolute inset-x-0 bottom-0 h-[100px] bg-gradient-to-t from-background to-transparent" />
-        
-        <div className="relative z-10 flex h-full flex-col items-center justify-end p-2 pb-6">
-            <blockquote className="space-y-2 text-center text-foreground">
-              <p className="text-lg font-medium">
-                “<Typewriter
-                    key={currentContent.quote.text}
-                    text={currentContent.quote.text}
-                    speed={60}
-                  />”
-              </p>
-              <cite className="block text-sm font-light text-muted-foreground not-italic">
-                  — {currentContent.quote.author}
-              </cite>
-            </blockquote>
+        <div className="relative z-10 flex flex-col items-center justify-center gap-8 max-w-sm">
+          {/* Isolated character with subtle float animation */}
+          <div className="relative group cursor-pointer transition-transform duration-300 hover:scale-105">
+            <img
+              src={currentContent.image.src}
+              alt={currentContent.image.alt}
+              className="w-48 h-auto max-h-64 object-contain drop-shadow-[0_10px_25px_rgba(0,0,0,0.25)] select-none pointer-events-none transition-all duration-500"
+              key={currentContent.image.src}
+            />
+          </div>
+
+          {/* Quote Section */}
+          <blockquote className="space-y-2 text-center text-foreground">
+            <p className="text-lg font-medium">
+              “<Typewriter
+                  key={currentContent.quote.text}
+                  text={currentContent.quote.text}
+                  speed={60}
+                />”
+            </p>
+            <cite className="block text-sm font-light text-muted-foreground not-italic">
+                — {currentContent.quote.author}
+            </cite>
+          </blockquote>
         </div>
       </div>
     </div>
