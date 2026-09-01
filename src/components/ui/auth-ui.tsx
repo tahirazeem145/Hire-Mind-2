@@ -162,12 +162,21 @@ Input.displayName = "Input";
 export interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   onFocusChange?: (focused: boolean) => void;
+  onVisibilityChange?: (visible: boolean) => void;
 }
 const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ className, label, onFocusChange, onFocus, onBlur, ...props }, ref) => {
+  ({ className, label, onFocusChange, onVisibilityChange, onFocus, onBlur, ...props }, ref) => {
     const id = useId();
     const [showPassword, setShowPassword] = useState(false);
-    const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
+    
+    const togglePasswordVisibility = () => {
+      setShowPassword((prev) => {
+        const next = !prev;
+        onVisibilityChange?.(next);
+        return next;
+      });
+    };
+
     return (
       <div className="grid w-full items-center gap-2">
         {label && <Label htmlFor={id}>{label}</Label>}
@@ -207,14 +216,23 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
 PasswordInput.displayName = "PasswordInput";
 
 interface FormProps {
+  onEmailFocusChange: (focused: boolean) => void;
   onPasswordFocusChange: (focused: boolean) => void;
+  onPasswordVisibilityChange: (visible: boolean) => void;
+  onButtonHoverChange: (hovered: boolean) => void;
 }
 
-function SignInForm({ onPasswordFocusChange }: FormProps) {
+function SignInForm({
+  onEmailFocusChange,
+  onPasswordFocusChange,
+  onPasswordVisibilityChange,
+  onButtonHoverChange,
+}: FormProps) {
   const handleSignIn = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     console.log("UI: Sign In form submitted");
   };
+
   return (
     <form onSubmit={handleSignIn} autoComplete="on" className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
@@ -231,7 +249,16 @@ function SignInForm({ onPasswordFocusChange }: FormProps) {
       <div className="grid gap-4">
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" placeholder="m@example.com" required autoComplete="email" />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="m@example.com"
+            required
+            autoComplete="email"
+            onFocus={() => onEmailFocusChange(true)}
+            onBlur={() => onEmailFocusChange(false)}
+          />
         </div>
         <div className="grid gap-2">
           <div className="flex items-center justify-between">
@@ -247,9 +274,16 @@ function SignInForm({ onPasswordFocusChange }: FormProps) {
             autoComplete="current-password"
             placeholder="Password"
             onFocusChange={onPasswordFocusChange}
+            onVisibilityChange={onPasswordVisibilityChange}
           />
         </div>
-        <Button type="submit" variant="default" className="mt-2 h-11 w-full font-medium shadow-md">
+        <Button
+          type="submit"
+          variant="default"
+          className="mt-2 h-11 w-full font-medium shadow-md"
+          onMouseEnter={() => onButtonHoverChange(true)}
+          onMouseLeave={() => onButtonHoverChange(false)}
+        >
           Sign In
         </Button>
       </div>
@@ -257,11 +291,17 @@ function SignInForm({ onPasswordFocusChange }: FormProps) {
   );
 }
 
-function SignUpForm({ onPasswordFocusChange }: FormProps) {
+function SignUpForm({
+  onEmailFocusChange,
+  onPasswordFocusChange,
+  onPasswordVisibilityChange,
+  onButtonHoverChange,
+}: FormProps) {
   const handleSignUp = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     console.log("UI: Sign Up form submitted");
   };
+
   return (
     <form onSubmit={handleSignUp} autoComplete="on" className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
@@ -282,7 +322,16 @@ function SignUpForm({ onPasswordFocusChange }: FormProps) {
         </div>
         <div className="grid gap-2">
           <Label htmlFor="email-signup">Email</Label>
-          <Input id="email-signup" name="email" type="email" placeholder="m@example.com" required autoComplete="email" />
+          <Input
+            id="email-signup"
+            name="email"
+            type="email"
+            placeholder="m@example.com"
+            required
+            autoComplete="email"
+            onFocus={() => onEmailFocusChange(true)}
+            onBlur={() => onEmailFocusChange(false)}
+          />
         </div>
         <PasswordInput
           id="password-signup"
@@ -292,8 +341,15 @@ function SignUpForm({ onPasswordFocusChange }: FormProps) {
           autoComplete="new-password"
           placeholder="Password"
           onFocusChange={onPasswordFocusChange}
+          onVisibilityChange={onPasswordVisibilityChange}
         />
-        <Button type="submit" variant="default" className="mt-2 h-11 w-full font-medium shadow-md">
+        <Button
+          type="submit"
+          variant="default"
+          className="mt-2 h-11 w-full font-medium shadow-md"
+          onMouseEnter={() => onButtonHoverChange(true)}
+          onMouseLeave={() => onButtonHoverChange(false)}
+        >
           Sign Up
         </Button>
       </div>
@@ -304,11 +360,17 @@ function SignUpForm({ onPasswordFocusChange }: FormProps) {
 function AuthFormContainer({
   isSignIn,
   onToggle,
+  onEmailFocusChange,
   onPasswordFocusChange,
+  onPasswordVisibilityChange,
+  onButtonHoverChange,
 }: {
   isSignIn: boolean;
   onToggle: () => void;
+  onEmailFocusChange: (focused: boolean) => void;
   onPasswordFocusChange: (focused: boolean) => void;
+  onPasswordVisibilityChange: (visible: boolean) => void;
+  onButtonHoverChange: (hovered: boolean) => void;
 }) {
   return (
     <div className="relative w-full max-w-[420px]">
@@ -319,9 +381,19 @@ function AuthFormContainer({
       <div className="relative w-full rounded-3xl border border-border/90 dark:border-border/60 bg-card/85 dark:bg-card/60 p-7 sm:p-9 shadow-2xl shadow-black/10 dark:shadow-black/40 backdrop-blur-xl transition-all duration-300">
         <div className="flex flex-col gap-6">
           {isSignIn ? (
-            <SignInForm onPasswordFocusChange={onPasswordFocusChange} />
+            <SignInForm
+              onEmailFocusChange={onEmailFocusChange}
+              onPasswordFocusChange={onPasswordFocusChange}
+              onPasswordVisibilityChange={onPasswordVisibilityChange}
+              onButtonHoverChange={onButtonHoverChange}
+            />
           ) : (
-            <SignUpForm onPasswordFocusChange={onPasswordFocusChange} />
+            <SignUpForm
+              onEmailFocusChange={onEmailFocusChange}
+              onPasswordFocusChange={onPasswordFocusChange}
+              onPasswordVisibilityChange={onPasswordVisibilityChange}
+              onButtonHoverChange={onButtonHoverChange}
+            />
           )}
 
           <div className="text-center text-sm">
@@ -342,6 +414,8 @@ function AuthFormContainer({
             type="button"
             className="h-11 w-full border-border/80 hover:bg-accent/80 transition-all shadow-sm"
             onClick={() => console.log("UI: Google button clicked")}
+            onMouseEnter={() => onButtonHoverChange(true)}
+            onMouseLeave={() => onButtonHoverChange(false)}
           >
             <img
               src="https://www.svgrepo.com/show/475656/google-color.svg"
@@ -390,8 +464,13 @@ const defaultSignUpContent = {
 
 export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) {
   const [isSignIn, setIsSignIn] = useState(true);
-  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const toggleForm = () => setIsSignIn((prev) => !prev);
+
+  // Form reactive states
+  const [isEmailFocused, setIsEmailFocused] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
 
   const finalSignInContent = {
     quote: { ...defaultSignInContent.quote, ...signInContent.quote },
@@ -455,10 +534,13 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
             </blockquote>
           </div>
 
-          {/* Character Placed at the Bottom with Animated Cursor Eye Tracking */}
+          {/* Character Placed at the Bottom with Deep Interactivity & Form Reactivity */}
           <div className="flex justify-center items-end w-full">
             <InteractiveCharacter
+              isEmailFocused={isEmailFocused}
               isPasswordFocused={isPasswordFocused}
+              isPasswordVisible={isPasswordVisible}
+              isButtonHovered={isButtonHovered}
               className="max-w-[280px] sm:max-w-[340px] md:max-w-[380px] lg:max-w-[430px] xl:max-w-[460px]"
             />
           </div>
@@ -470,7 +552,10 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
             <AuthFormContainer
               isSignIn={isSignIn}
               onToggle={toggleForm}
+              onEmailFocusChange={setIsEmailFocused}
               onPasswordFocusChange={setIsPasswordFocused}
+              onPasswordVisibilityChange={setIsPasswordVisible}
+              onButtonHoverChange={setIsButtonHovered}
             />
           </div>
         </div>
