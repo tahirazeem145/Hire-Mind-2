@@ -9,6 +9,7 @@ import { Eye, EyeOff, Sparkles, ShieldCheck } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { InteractiveCharacter } from "@/components/ui/interactive-character";
+import { InteractiveDotGrid } from "@/components/ui/interactive-dot-grid";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -424,14 +425,8 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
 
       {/* LEFT SIDE: Interactive Character with Moving Eye & Typewriter Quote */}
       <div className="relative flex flex-col items-center justify-center p-6 md:p-12 bg-muted/25 dark:bg-card/25 border-b md:border-b-0 md:border-r border-border/50 transition-colors duration-500 overflow-hidden min-h-[380px] md:min-h-screen">
-        {/* Subtle grid pattern background on left */}
-        <div
-          className="absolute inset-0 opacity-[0.03] dark:opacity-[0.07] pointer-events-none"
-          style={{
-            backgroundImage: `radial-gradient(circle, currentColor 1px, transparent 1px)`,
-            backgroundSize: "24px 24px",
-          }}
-        />
+        {/* Interactive expanding dot grid on left */}
+        <InteractiveDotGrid dotSpacing={26} baseRadius={1.0} maxRadius={3.8} influenceRadius={140} />
 
         {/* Ambient radial glows */}
         <div className="absolute w-80 h-80 rounded-full bg-amber-400/15 dark:bg-yellow-400/10 blur-3xl pointer-events-none animate-pulse" />
@@ -459,28 +454,20 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
         </div>
       </div>
 
-      {/* RIGHT SIDE: Rich Atmospheric Background + Authentication Form */}
+      {/* RIGHT SIDE: Interactive Expanding Dot Grid Background + Authentication Form */}
       <div
         ref={rightContainerRef}
         onMouseMove={handleMouseMove}
         className="relative flex items-center justify-center p-4 sm:p-8 md:p-12 min-h-[520px] md:min-h-screen overflow-hidden"
       >
-        {/* 1. Interactive Cursor Spotlight Gradient */}
+        {/* 1. Interactive Dynamic Expanding Dot Grid Canvas */}
+        <InteractiveDotGrid dotSpacing={28} baseRadius={1.2} maxRadius={5.2} influenceRadius={170} />
+
+        {/* 2. Interactive Cursor Spotlight Gradient */}
         <div
           className="absolute inset-0 pointer-events-none transition-opacity duration-300"
           style={{
             background: `radial-gradient(600px circle at ${spotlightPos.x}% ${spotlightPos.y}%, rgba(245, 158, 11, 0.08), transparent 50%)`,
-          }}
-        />
-
-        {/* 2. Delicate Architectural Dot Matrix Grid */}
-        <div
-          className="absolute inset-0 opacity-[0.04] dark:opacity-[0.08] pointer-events-none"
-          style={{
-            backgroundImage: `radial-gradient(circle, currentColor 1px, transparent 1px)`,
-            backgroundSize: "28px 28px",
-            maskImage: "radial-gradient(ellipse 70% 60% at 50% 50%, #000 60%, transparent 100%)",
-            WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 50%, #000 60%, transparent 100%)",
           }}
         />
 
