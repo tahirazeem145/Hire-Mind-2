@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Sparkles } from "lucide-react";
+import { minionAudio } from "@/lib/audio";
 
 interface InteractiveCharacterProps {
   className?: string;
@@ -232,12 +233,16 @@ export function InteractiveCharacter({
     }
   }, [isPasswordFocused, isPasswordVisible, isEmailFocused, isButtonHovered]);
 
-  // Interactive Click & Poke Reaction
+  // Interactive Click & Poke Reaction with Minion Sound
   const handleCharacterClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // 1. Play cute Minion sound effect
+    minionAudio.playRandomMinionSound();
+
+    // 2. Trigger squish-and-bounce animation
     setIsSquished(true);
     setTimeout(() => setIsSquished(false), 350);
 
-    // Random quote bubble
+    // 3. Random quote bubble
     const randomQuote = QUOTES_POOL[Math.floor(Math.random() * QUOTES_POOL.length)];
     setBubbleText(randomQuote);
 
@@ -246,7 +251,7 @@ export function InteractiveCharacter({
       setBubbleText(null);
     }, 2800);
 
-    // Spawn colorful sparkle particles around click point
+    // 4. Spawn colorful sparkle particles around click point
     const rect = containerRef.current?.getBoundingClientRect();
     if (rect) {
       const clickX = e.clientX - rect.left;
