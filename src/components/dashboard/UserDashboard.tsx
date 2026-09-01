@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
   LogOut,
@@ -8,17 +8,20 @@ import {
   Bot,
   FileText,
   Briefcase,
-  Award,
   CheckCircle2,
   Database,
-  ShieldAlert,
+  LayoutDashboard,
+  FileCheck2,
+  Mic,
 } from "lucide-react";
 import { Button } from "@/components/ui/auth-ui";
 import { InteractiveCharacter } from "@/components/ui/interactive-character";
 import { InteractiveDotGrid } from "@/components/ui/interactive-dot-grid";
+import { ResumeAnalyzer } from "@/components/resume/ResumeAnalyzer";
 
 export function UserDashboard() {
   const { user, userProfile, logout, isFirebaseConfigured } = useAuth();
+  const [currentTab, setCurrentTab] = useState<"overview" | "resume" | "interview">("overview");
 
   const candidateName = userProfile?.displayName || user?.displayName || "Candidate";
   const candidateEmail = userProfile?.email || user?.email || "candidate@hiremind.ai";
@@ -33,143 +36,227 @@ export function UserDashboard() {
       <div className="absolute top-1/2 -right-32 w-[600px] h-[600px] rounded-full bg-blue-500/10 dark:bg-sky-500/10 blur-3xl pointer-events-none" />
 
       {/* Navigation Header */}
-      <header className="relative z-20 border-b border-border/70 backdrop-blur-md bg-card/40 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <header className="relative z-20 border-b border-border/70 backdrop-blur-md bg-card/40 px-4 sm:px-8 py-3.5">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center shadow-md">
               <Bot className="w-6 h-6 text-black" />
             </div>
             <div>
-              <div className="font-bold tracking-tight text-lg flex items-center gap-2">
+              <div className="font-bold tracking-tight text-base sm:text-lg flex items-center gap-2">
                 <span>HireMind AI</span>
                 <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30">
-                  2.0 Beta
+                  2.0 Live
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">Intelligent Career Preparation Platform</p>
+              <p className="text-xs text-muted-foreground hidden sm:block">Intelligent Career Preparation Platform</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* Firebase connection status badge */}
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+          {/* Center Navigation Tabs */}
+          <nav className="flex items-center gap-1.5 p-1 rounded-2xl bg-muted/30 border border-border/60 backdrop-blur-sm">
+            <button
+              type="button"
+              onClick={() => setCurrentTab("overview")}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                currentTab === "overview"
+                  ? "bg-amber-500 text-black shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>Overview</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentTab("resume")}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                currentTab === "resume"
+                  ? "bg-amber-500 text-black shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <FileCheck2 className="w-3.5 h-3.5" />
+              <span>Resume ATS</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentTab("interview")}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                currentTab === "interview"
+                  ? "bg-amber-500 text-black shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Mic className="w-3.5 h-3.5" />
+              <span>AI Interview</span>
+            </button>
+          </nav>
+
+          <div className="flex items-center gap-3">
+            {/* Firebase connection status */}
+            <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               <Database className="w-3.5 h-3.5" />
-              <span>{isFirebaseConfigured ? "Firebase Connected" : "Local Demo Session"}</span>
+              <span>{isFirebaseConfigured ? "Firebase Connected" : "Local Mode"}</span>
             </div>
 
             <Button
               variant="outline"
               size="sm"
               onClick={logout}
-              className="gap-2 border-border/80 hover:bg-destructive/10 hover:text-destructive transition-colors"
+              className="gap-2 border-border/80 hover:bg-destructive/10 hover:text-destructive transition-colors text-xs"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" />
               <span>Sign Out</span>
             </Button>
           </div>
         </div>
       </header>
 
-      {/* Main Dashboard Body */}
-      <main className="relative z-10 max-w-7xl mx-auto p-6 md:p-10 space-y-8">
-        {/* Welcome Hero Banner */}
-        <div className="relative rounded-3xl border border-border/80 bg-card/60 backdrop-blur-xl p-8 sm:p-10 shadow-xl overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Main Content Area */}
+      <main className="relative z-10 max-w-7xl mx-auto p-4 sm:p-6 md:p-10 space-y-8">
+        {/* TAB 1: OVERVIEW */}
+        {currentTab === "overview" && (
+          <div className="space-y-8 animate-in fade-in">
+            {/* Welcome Hero Banner */}
+            <div className="relative rounded-3xl border border-border/80 bg-card/60 backdrop-blur-xl p-6 sm:p-10 shadow-xl overflow-hidden">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="max-w-2xl space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-300 border border-amber-500/20">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Authentication Verified</span>
-            </div>
+              <div className="max-w-2xl space-y-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-300 border border-amber-500/20">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Authentication Verified</span>
+                </div>
 
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              Welcome back, <span className="bg-gradient-to-r from-amber-500 to-yellow-400 bg-clip-text text-transparent">{candidateName}</span>!
-            </h1>
-            <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
-              Your AI-powered career assistant is ready. Prepare for live interviews, analyze your resume, and track your skills roadmap.
-            </p>
+                <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+                  Welcome back,{" "}
+                  <span className="bg-gradient-to-r from-amber-500 to-yellow-400 bg-clip-text text-transparent">
+                    {candidateName}
+                  </span>
+                  !
+                </h1>
+                <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+                  Your AI-powered career assistant is ready. Optimize your resume for ATS algorithms, prepare for live technical interviews, and accelerate your job search.
+                </p>
 
-            {/* User Profile Card Chips */}
-            <div className="flex flex-wrap gap-2 pt-2">
-              <div className="px-3 py-1.5 rounded-lg bg-background/80 border border-border/80 text-xs font-mono text-muted-foreground">
-                UID: {user?.uid ? user.uid.slice(0, 16) + "..." : "local-auth-active"}
+                {/* User Profile Card Chips */}
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <div className="px-3 py-1.5 rounded-lg bg-background/80 border border-border/80 text-xs font-mono text-muted-foreground">
+                    UID: {user?.uid ? user.uid.slice(0, 16) + "..." : "local-auth-active"}
+                  </div>
+                  <div className="px-3 py-1.5 rounded-lg bg-background/80 border border-border/80 text-xs font-mono text-muted-foreground">
+                    Email: {candidateEmail}
+                  </div>
+                  <div className="px-3 py-1.5 rounded-lg bg-background/80 border border-border/80 text-xs font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Firestore Document Synced
+                  </div>
+                </div>
               </div>
-              <div className="px-3 py-1.5 rounded-lg bg-background/80 border border-border/80 text-xs font-mono text-muted-foreground">
-                Email: {candidateEmail}
+            </div>
+
+            {/* Feature Modules Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Card 1: AI Resume Optimizer */}
+              <div className="group relative rounded-3xl border border-border/80 bg-card/60 backdrop-blur-md p-6 shadow-md hover:border-amber-500/40 transition-all duration-300 hover:shadow-xl flex flex-col justify-between">
+                <div>
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-inner">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <h3 className="font-bold text-lg mb-1">Resume ATS Optimizer</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Instant ATS compatibility percentage, missing keyword alerts, and AI-powered STAR bullet rewrites.
+                  </p>
+                </div>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setCurrentTab("resume")}
+                  className="w-full font-medium shadow-md"
+                >
+                  Launch ATS Analyzer
+                </Button>
               </div>
-              <div className="px-3 py-1.5 rounded-lg bg-background/80 border border-border/80 text-xs font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Firestore Document Synced
+
+              {/* Card 2: AI Mock Interview */}
+              <div className="group relative rounded-3xl border border-border/80 bg-card/60 backdrop-blur-md p-6 shadow-md hover:border-sky-500/40 transition-all duration-300 hover:shadow-xl flex flex-col justify-between">
+                <div>
+                  <div className="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-inner">
+                    <Bot className="w-6 h-6" />
+                  </div>
+                  <h3 className="font-bold text-lg mb-1">AI Mock Interviewer</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Real-time technical & behavioral voice interview simulations tailored to your target job role.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentTab("interview")}
+                  className="w-full font-medium"
+                >
+                  Start Mock Interview
+                </Button>
+              </div>
+
+              {/* Card 3: Job Readiness Roadmap */}
+              <div className="group relative rounded-3xl border border-border/80 bg-card/60 backdrop-blur-md p-6 shadow-md hover:border-emerald-500/40 transition-all duration-300 hover:shadow-xl flex flex-col justify-between">
+                <div>
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-inner">
+                    <Briefcase className="w-6 h-6" />
+                  </div>
+                  <h3 className="font-bold text-lg mb-1">Job Match Engine</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Compare your skill profile against top positions and generate custom 7-day prep checklists.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentTab("resume")}
+                  className="w-full font-medium"
+                >
+                  Compare Job Post
+                </Button>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Feature Modules Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1: AI Mock Interview */}
-          <div className="group relative rounded-2xl border border-border/80 bg-card/60 backdrop-blur-md p-6 shadow-md hover:border-amber-500/40 transition-all duration-300 hover:shadow-lg">
-            <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <Bot className="w-6 h-6" />
-            </div>
-            <h3 className="font-bold text-lg mb-1">AI Mock Interviewer</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Real-time voice and technical interview practice tailored to your target job role.
-            </p>
-            <Button variant="outline" size="sm" className="w-full">
-              Launch Interview
-            </Button>
-          </div>
-
-          {/* Card 2: AI Resume Optimizer */}
-          <div className="group relative rounded-2xl border border-border/80 bg-card/60 backdrop-blur-md p-6 shadow-md hover:border-sky-500/40 transition-all duration-300 hover:shadow-lg">
-            <div className="w-12 h-12 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <FileText className="w-6 h-6" />
-            </div>
-            <h3 className="font-bold text-lg mb-1">Resume Intelligence</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Instant ATS score feedback, keyword optimization, and custom tailoring.
-            </p>
-            <Button variant="outline" size="sm" className="w-full">
-              Analyze Resume
-            </Button>
-          </div>
-
-          {/* Card 3: Job Readiness Roadmap */}
-          <div className="group relative rounded-2xl border border-border/80 bg-card/60 backdrop-blur-md p-6 shadow-md hover:border-emerald-500/40 transition-all duration-300 hover:shadow-lg">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <Briefcase className="w-6 h-6" />
-            </div>
-            <h3 className="font-bold text-lg mb-1">Job Match Engine</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Match your candidate profile against top engineering positions with gap analysis.
-            </p>
-            <Button variant="outline" size="sm" className="w-full">
-              View Matches
-            </Button>
-          </div>
-        </div>
-
-        {/* Firebase Setup Notice (if not yet configured) */}
-        {!isFirebaseConfigured && (
-          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 flex items-start gap-4 text-xs sm:text-sm text-amber-700 dark:text-amber-200">
-            <ShieldAlert className="w-5 h-5 shrink-0 text-amber-500 mt-0.5" />
-            <div className="space-y-1">
-              <span className="font-semibold">Ready to connect your own live Firebase Project?</span>
-              <p className="text-muted-foreground text-xs">
-                Add your Firebase project credentials into the <code className="bg-background px-1.5 py-0.5 rounded font-mono">.env</code> file (<code className="bg-background px-1.5 py-0.5 rounded font-mono">VITE_FIREBASE_API_KEY</code>, etc.) to switch from demo storage to live Cloud Firestore.
+            {/* Interactive Companion Assistant at Bottom */}
+            <div className="flex flex-col items-center justify-center pt-8 pb-4">
+              <p className="text-xs font-mono text-muted-foreground uppercase tracking-widest mb-3">
+                Click your AI companion for sound & reactions
               </p>
+              <InteractiveCharacter className="max-w-[220px]" />
             </div>
           </div>
         )}
 
-        {/* Interactive Companion Assistant at Bottom */}
-        <div className="flex flex-col items-center justify-center pt-8 pb-4">
-          <p className="text-xs font-mono text-muted-foreground uppercase tracking-widest mb-3">
-            Click your companion for assistance
-          </p>
-          <InteractiveCharacter className="max-w-[220px]" />
-        </div>
+        {/* TAB 2: RESUME ATS ANALYZER */}
+        {currentTab === "resume" && (
+          <div className="animate-in fade-in">
+            <ResumeAnalyzer />
+          </div>
+        )}
+
+        {/* TAB 3: MOCK INTERVIEW TEASER */}
+        {currentTab === "interview" && (
+          <div className="rounded-3xl border border-border/80 bg-card/60 backdrop-blur-xl p-8 text-center space-y-6 animate-in fade-in">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto shadow-inner">
+              <Mic className="w-8 h-8 animate-pulse" />
+            </div>
+            <div className="max-w-md mx-auto space-y-2">
+              <h2 className="text-2xl font-bold">AI Mock Interview Simulator</h2>
+              <p className="text-sm text-muted-foreground">
+                Get ready for live voice & technical mock interviews powered by Gemini 2.0 Flash and Web Speech voice recognition.
+              </p>
+            </div>
+            <div className="flex justify-center gap-4">
+              <Button variant="outline" onClick={() => setCurrentTab("resume")}>
+                First Optimize Your Resume
+              </Button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
