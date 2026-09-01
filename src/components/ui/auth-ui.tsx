@@ -8,6 +8,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { Eye, EyeOff } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { InteractiveCharacter } from "@/components/ui/interactive-character";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -158,10 +159,11 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
 Input.displayName = "Input";
 
 export interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-    label?: string;
+  label?: string;
+  onFocusChange?: (focused: boolean) => void;
 }
 const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ className, label, ...props }, ref) => {
+  ({ className, label, onFocusChange, onFocus, onBlur, ...props }, ref) => {
     const id = useId();
     const [showPassword, setShowPassword] = useState(false);
     const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
@@ -169,9 +171,32 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
       <div className="grid w-full items-center gap-2">
         {label && <Label htmlFor={id}>{label}</Label>}
         <div className="relative">
-          <Input id={id} type={showPassword ? "text" : "password"} className={cn("pe-10", className)} ref={ref} {...props} />
-          <button type="button" onClick={togglePasswordVisibility} className="absolute inset-y-0 end-0 flex h-full w-10 items-center justify-center text-muted-foreground/80 transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50" aria-label={showPassword ? "Hide password" : "Show password"}>
-            {showPassword ? (<EyeOff className="size-4" aria-hidden="true" />) : (<Eye className="size-4" aria-hidden="true" />)}
+          <Input
+            id={id}
+            type={showPassword ? "text" : "password"}
+            className={cn("pe-10", className)}
+            onFocus={(e) => {
+              onFocusChange?.(true);
+              onFocus?.(e);
+            }}
+            onBlur={(e) => {
+              onFocusChange?.(false);
+              onBlur?.(e);
+            }}
+            ref={ref}
+            {...props}
+          />
+          <button
+            type="button"
+            onClick={togglePasswordVisibility}
+            className="absolute inset-y-0 end-0 flex h-full w-10 items-center justify-center text-muted-foreground/80 transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? (
+              <EyeOff className="size-4" aria-hidden="true" />
+            ) : (
+              <Eye className="size-4" aria-hidden="true" />
+            )}
           </button>
         </div>
       </div>
@@ -180,116 +205,167 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
 );
 PasswordInput.displayName = "PasswordInput";
 
-function SignInForm() {
-  const handleSignIn = (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); console.log("UI: Sign In form submitted"); };
+interface FormProps {
+  onPasswordFocusChange: (focused: boolean) => void;
+}
+
+function SignInForm({ onPasswordFocusChange }: FormProps) {
+  const handleSignIn = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    console.log("UI: Sign In form submitted");
+  };
   return (
     <form onSubmit={handleSignIn} autoComplete="on" className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold tracking-tight">Sign in to your account</h1>
-        <p className="text-balance text-sm text-muted-foreground">Enter your email below to sign in</p>
+        <p className="text-balance text-sm text-muted-foreground">
+          Enter your email below to sign in
+        </p>
       </div>
       <div className="grid gap-4">
-        <div className="grid gap-2"><Label htmlFor="email">Email</Label><Input id="email" name="email" type="email" placeholder="m@example.com" required autoComplete="email" /></div>
-        <PasswordInput name="password" label="Password" required autoComplete="current-password" placeholder="Password" />
-        <Button type="submit" variant="default" className="mt-2 h-10 w-full font-medium">Sign In</Button>
+        <div className="grid gap-2">
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" name="email" type="email" placeholder="m@example.com" required autoComplete="email" />
+        </div>
+        <PasswordInput
+          name="password"
+          label="Password"
+          required
+          autoComplete="current-password"
+          placeholder="Password"
+          onFocusChange={onPasswordFocusChange}
+        />
+        <Button type="submit" variant="default" className="mt-2 h-10 w-full font-medium">
+          Sign In
+        </Button>
       </div>
     </form>
   );
 }
 
-function SignUpForm() {
-  const handleSignUp = (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); console.log("UI: Sign Up form submitted"); };
+function SignUpForm({ onPasswordFocusChange }: FormProps) {
+  const handleSignUp = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    console.log("UI: Sign Up form submitted");
+  };
   return (
     <form onSubmit={handleSignUp} autoComplete="on" className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold tracking-tight">Create an account</h1>
-        <p className="text-balance text-sm text-muted-foreground">Enter your details below to sign up</p>
+        <p className="text-balance text-sm text-muted-foreground">
+          Enter your details below to sign up
+        </p>
       </div>
       <div className="grid gap-4">
-        <div className="grid gap-2"><Label htmlFor="name">Full Name</Label><Input id="name" name="name" type="text" placeholder="John Doe" required autoComplete="name" /></div>
-        <div className="grid gap-2"><Label htmlFor="email">Email</Label><Input id="email" name="email" type="email" placeholder="m@example.com" required autoComplete="email" /></div>
-        <PasswordInput name="password" label="Password" required autoComplete="new-password" placeholder="Password"/>
-        <Button type="submit" variant="default" className="mt-2 h-10 w-full font-medium">Sign Up</Button>
+        <div className="grid gap-1">
+          <Label htmlFor="name">Full Name</Label>
+          <Input id="name" name="name" type="text" placeholder="John Doe" required autoComplete="name" />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" name="email" type="email" placeholder="m@example.com" required autoComplete="email" />
+        </div>
+        <PasswordInput
+          name="password"
+          label="Password"
+          required
+          autoComplete="new-password"
+          placeholder="Password"
+          onFocusChange={onPasswordFocusChange}
+        />
+        <Button type="submit" variant="default" className="mt-2 h-10 w-full font-medium">
+          Sign Up
+        </Button>
       </div>
     </form>
   );
 }
 
-function AuthFormContainer({ isSignIn, onToggle }: { isSignIn: boolean; onToggle: () => void; }) {
-    return (
-        <div className="w-full max-w-[400px] rounded-2xl border border-border/80 dark:border-border/60 bg-card/60 dark:bg-card/40 p-6 sm:p-8 shadow-xl shadow-black/5 dark:shadow-black/20 backdrop-blur-md transition-all duration-300">
-            <div className="flex flex-col gap-6">
-                {isSignIn ? <SignInForm /> : <SignUpForm />}
-                
-                <div className="text-center text-sm">
-                    {isSignIn ? "Don't have an account?" : "Already have an account?"}{" "}
-                    <Button variant="link" className="pl-1 text-foreground font-semibold" onClick={onToggle}>
-                        {isSignIn ? "Sign up" : "Sign in"}
-                    </Button>
-                </div>
-                
-                <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border/80">
-                    <span className="relative z-10 bg-card px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Or continue with</span>
-                </div>
-                
-                <Button variant="outline" type="button" className="h-10 w-full" onClick={() => console.log("UI: Google button clicked")}>
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google icon" className="mr-2 h-4 w-4" />
-                    Continue with Google
-                </Button>
-            </div>
+function AuthFormContainer({
+  isSignIn,
+  onToggle,
+  onPasswordFocusChange,
+}: {
+  isSignIn: boolean;
+  onToggle: () => void;
+  onPasswordFocusChange: (focused: boolean) => void;
+}) {
+  return (
+    <div className="w-full max-w-[400px] rounded-2xl border border-border/80 dark:border-border/60 bg-card/60 dark:bg-card/40 p-6 sm:p-8 shadow-xl shadow-black/5 dark:shadow-black/20 backdrop-blur-md transition-all duration-300">
+      <div className="flex flex-col gap-6">
+        {isSignIn ? (
+          <SignInForm onPasswordFocusChange={onPasswordFocusChange} />
+        ) : (
+          <SignUpForm onPasswordFocusChange={onPasswordFocusChange} />
+        )}
+
+        <div className="text-center text-sm">
+          {isSignIn ? "Don't have an account?" : "Already have an account?"}{" "}
+          <Button variant="link" className="pl-1 text-foreground font-semibold" onClick={onToggle}>
+            {isSignIn ? "Sign up" : "Sign in"}
+          </Button>
         </div>
-    )
+
+        <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border/80">
+          <span className="relative z-10 bg-card px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Or continue with
+          </span>
+        </div>
+
+        <Button
+          variant="outline"
+          type="button"
+          className="h-10 w-full"
+          onClick={() => console.log("UI: Google button clicked")}
+        >
+          <img
+            src="https://www.svgrepo.com/show/475656/google-color.svg"
+            alt="Google icon"
+            className="mr-2 h-4 w-4"
+          />
+          Continue with Google
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 interface AuthContentProps {
-    image?: {
-        src: string;
-        alt: string;
-    };
-    quote?: {
-        text: string;
-        author: string;
-    }
+  quote?: {
+    text: string;
+    author: string;
+  };
 }
 
 interface AuthUIProps {
-    signInContent?: AuthContentProps;
-    signUpContent?: AuthContentProps;
+  signInContent?: AuthContentProps;
+  signUpContent?: AuthContentProps;
 }
 
 const defaultSignInContent = {
-    image: {
-        src: "/character.png",
-        alt: "HireMind AI Companion"
-    },
-    quote: {
-        text: "Welcome Back! The journey continues.",
-        author: "HireMind AI"
-    }
+  quote: {
+    text: "Welcome Back! The journey continues.",
+    author: "HireMind AI",
+  },
 };
 
 const defaultSignUpContent = {
-    image: {
-        src: "/character.png",
-        alt: "HireMind AI Companion"
-    },
-    quote: {
-        text: "Create an account. A new chapter awaits.",
-        author: "HireMind AI"
-    }
+  quote: {
+    text: "Create an account. A new chapter awaits.",
+    author: "HireMind AI",
+  },
 };
 
 export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) {
   const [isSignIn, setIsSignIn] = useState(true);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const toggleForm = () => setIsSignIn((prev) => !prev);
 
   const finalSignInContent = {
-      image: { ...defaultSignInContent.image, ...signInContent.image },
-      quote: { ...defaultSignInContent.quote, ...signInContent.quote },
+    quote: { ...defaultSignInContent.quote, ...signInContent.quote },
   };
   const finalSignUpContent = {
-      image: { ...defaultSignUpContent.image, ...signUpContent.image },
-      quote: { ...defaultSignUpContent.quote, ...signUpContent.quote },
+    quote: { ...defaultSignUpContent.quote, ...signUpContent.quote },
   };
 
   const currentContent = isSignIn ? finalSignInContent : finalSignUpContent;
@@ -302,44 +378,41 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
           display: none;
         }
       `}</style>
-      
-      {/* Left Column: Form Box with Border */}
-      <div className="flex min-h-screen items-center justify-center p-4 sm:p-6 md:p-10">
-        <AuthFormContainer isSignIn={isSignIn} onToggle={toggleForm} />
-      </div>
 
-      {/* Right Column: Character without background */}
-      <div
-        className="hidden md:flex relative flex-col items-center justify-center p-8 bg-muted/20 dark:bg-card/30 border-l border-border/50 transition-colors duration-500 overflow-hidden"
-      >
-        {/* Subtle ambient light glow behind the character */}
+      {/* LEFT SIDE: Interactive Character with Moving Eye & Typewriter Quote */}
+      <div className="relative flex flex-col items-center justify-center p-6 md:p-12 bg-muted/20 dark:bg-card/30 border-b md:border-b-0 md:border-r border-border/50 transition-colors duration-500 overflow-hidden min-h-[380px] md:min-h-screen">
+        {/* Ambient radial glow */}
         <div className="absolute w-72 h-72 rounded-full bg-amber-400/10 dark:bg-yellow-400/10 blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col items-center justify-center gap-8 max-w-sm">
-          {/* Isolated character with subtle float animation */}
-          <div className="relative group cursor-pointer transition-transform duration-300 hover:scale-105">
-            <img
-              src={currentContent.image.src}
-              alt={currentContent.image.alt}
-              className="w-48 h-auto max-h-64 object-contain drop-shadow-[0_10px_25px_rgba(0,0,0,0.25)] select-none pointer-events-none transition-all duration-500"
-              key={currentContent.image.src}
-            />
-          </div>
+          {/* Character with animated eye following cursor */}
+          <InteractiveCharacter isPasswordFocused={isPasswordFocused} />
 
           {/* Quote Section */}
           <blockquote className="space-y-2 text-center text-foreground">
             <p className="text-lg font-medium">
-              “<Typewriter
-                  key={currentContent.quote.text}
-                  text={currentContent.quote.text}
-                  speed={60}
-                />”
+              “
+              <Typewriter
+                key={currentContent.quote.text}
+                text={currentContent.quote.text}
+                speed={60}
+              />
+              ”
             </p>
             <cite className="block text-sm font-light text-muted-foreground not-italic">
-                — {currentContent.quote.author}
+              — {currentContent.quote.author}
             </cite>
           </blockquote>
         </div>
+      </div>
+
+      {/* RIGHT SIDE: Authentication Form Box */}
+      <div className="flex items-center justify-center p-4 sm:p-6 md:p-10 min-h-[500px] md:min-h-screen">
+        <AuthFormContainer
+          isSignIn={isSignIn}
+          onToggle={toggleForm}
+          onPasswordFocusChange={setIsPasswordFocused}
+        />
       </div>
     </div>
   );
