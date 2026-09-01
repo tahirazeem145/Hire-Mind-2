@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { useState, useId, useEffect } from "react";
+import { useState, useId, useEffect, useRef } from "react";
 import { Slot } from "@radix-ui/react-slot";
 import * as LabelPrimitive from "@radix-ui/react-label";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Sparkles, ShieldCheck } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { InteractiveCharacter } from "@/components/ui/interactive-character";
@@ -110,7 +110,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-primary/20",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline: "border border-border/80 dark:border-border/60 bg-background/50 hover:bg-accent hover:text-accent-foreground shadow-sm",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
@@ -147,7 +147,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
       <input
         type={type}
         className={cn(
-          "flex h-10 w-full rounded-lg border border-border/90 dark:border-border/70 bg-card/60 dark:bg-card/40 px-3.5 py-2 text-sm text-foreground shadow-sm transition-all placeholder:text-muted-foreground/70 hover:border-border focus-visible:border-foreground/40 dark:focus-visible:border-foreground/50 focus-visible:ring-2 focus-visible:ring-ring/20 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+          "flex h-11 w-full rounded-xl border border-border/90 dark:border-border/70 bg-card/60 dark:bg-card/40 px-3.5 py-2 text-sm text-foreground shadow-sm transition-all placeholder:text-muted-foreground/70 hover:border-foreground/30 focus-visible:border-foreground/60 dark:focus-visible:border-foreground/70 focus-visible:ring-2 focus-visible:ring-ring/25 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
           className
         )}
         ref={ref}
@@ -217,6 +217,11 @@ function SignInForm({ onPasswordFocusChange }: FormProps) {
   return (
     <form onSubmit={handleSignIn} autoComplete="on" className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
+        {/* Brand status badge */}
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/10 dark:bg-amber-400/10 text-amber-600 dark:text-amber-300 border border-amber-500/20 mb-1">
+          <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+          <span>HireMind AI Access</span>
+        </div>
         <h1 className="text-2xl font-bold tracking-tight">Sign in to your account</h1>
         <p className="text-balance text-sm text-muted-foreground">
           Enter your email below to sign in
@@ -227,15 +232,23 @@ function SignInForm({ onPasswordFocusChange }: FormProps) {
           <Label htmlFor="email">Email</Label>
           <Input id="email" name="email" type="email" placeholder="m@example.com" required autoComplete="email" />
         </div>
-        <PasswordInput
-          name="password"
-          label="Password"
-          required
-          autoComplete="current-password"
-          placeholder="Password"
-          onFocusChange={onPasswordFocusChange}
-        />
-        <Button type="submit" variant="default" className="mt-2 h-10 w-full font-medium">
+        <div className="grid gap-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password-signin">Password</Label>
+            <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+              Forgot password?
+            </a>
+          </div>
+          <PasswordInput
+            id="password-signin"
+            name="password"
+            required
+            autoComplete="current-password"
+            placeholder="Password"
+            onFocusChange={onPasswordFocusChange}
+          />
+        </div>
+        <Button type="submit" variant="default" className="mt-2 h-11 w-full font-medium shadow-md">
           Sign In
         </Button>
       </div>
@@ -251,6 +264,11 @@ function SignUpForm({ onPasswordFocusChange }: FormProps) {
   return (
     <form onSubmit={handleSignUp} autoComplete="on" className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
+        {/* Brand status badge */}
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/10 dark:bg-amber-400/10 text-amber-600 dark:text-amber-300 border border-amber-500/20 mb-1">
+          <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+          <span>Join HireMind AI</span>
+        </div>
         <h1 className="text-2xl font-bold tracking-tight">Create an account</h1>
         <p className="text-balance text-sm text-muted-foreground">
           Enter your details below to sign up
@@ -262,10 +280,11 @@ function SignUpForm({ onPasswordFocusChange }: FormProps) {
           <Input id="name" name="name" type="text" placeholder="John Doe" required autoComplete="name" />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" placeholder="m@example.com" required autoComplete="email" />
+          <Label htmlFor="email-signup">Email</Label>
+          <Input id="email-signup" name="email" type="email" placeholder="m@example.com" required autoComplete="email" />
         </div>
         <PasswordInput
+          id="password-signup"
           name="password"
           label="Password"
           required
@@ -273,7 +292,7 @@ function SignUpForm({ onPasswordFocusChange }: FormProps) {
           placeholder="Password"
           onFocusChange={onPasswordFocusChange}
         />
-        <Button type="submit" variant="default" className="mt-2 h-10 w-full font-medium">
+        <Button type="submit" variant="default" className="mt-2 h-11 w-full font-medium shadow-md">
           Sign Up
         </Button>
       </div>
@@ -291,40 +310,52 @@ function AuthFormContainer({
   onPasswordFocusChange: (focused: boolean) => void;
 }) {
   return (
-    <div className="w-full max-w-[400px] rounded-2xl border border-border/80 dark:border-border/60 bg-card/60 dark:bg-card/40 p-6 sm:p-8 shadow-xl shadow-black/5 dark:shadow-black/20 backdrop-blur-md transition-all duration-300">
-      <div className="flex flex-col gap-6">
-        {isSignIn ? (
-          <SignInForm onPasswordFocusChange={onPasswordFocusChange} />
-        ) : (
-          <SignUpForm onPasswordFocusChange={onPasswordFocusChange} />
-        )}
+    <div className="relative w-full max-w-[420px]">
+      {/* Decorative subtle ambient card glow */}
+      <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-primary/10 blur-xl opacity-80 pointer-events-none" />
 
-        <div className="text-center text-sm">
-          {isSignIn ? "Don't have an account?" : "Already have an account?"}{" "}
-          <Button variant="link" className="pl-1 text-foreground font-semibold" onClick={onToggle}>
-            {isSignIn ? "Sign up" : "Sign in"}
+      {/* Main Glass Card */}
+      <div className="relative w-full rounded-3xl border border-border/90 dark:border-border/60 bg-card/85 dark:bg-card/60 p-7 sm:p-9 shadow-2xl shadow-black/10 dark:shadow-black/40 backdrop-blur-xl transition-all duration-300">
+        <div className="flex flex-col gap-6">
+          {isSignIn ? (
+            <SignInForm onPasswordFocusChange={onPasswordFocusChange} />
+          ) : (
+            <SignUpForm onPasswordFocusChange={onPasswordFocusChange} />
+          )}
+
+          <div className="text-center text-sm">
+            {isSignIn ? "Don't have an account?" : "Already have an account?"}{" "}
+            <Button variant="link" className="pl-1 text-foreground font-semibold" onClick={onToggle}>
+              {isSignIn ? "Sign up" : "Sign in"}
+            </Button>
+          </div>
+
+          <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border/80">
+            <span className="relative z-10 bg-card px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Or continue with
+            </span>
+          </div>
+
+          <Button
+            variant="outline"
+            type="button"
+            className="h-11 w-full border-border/80 hover:bg-accent/80 transition-all shadow-sm"
+            onClick={() => console.log("UI: Google button clicked")}
+          >
+            <img
+              src="https://www.svgrepo.com/show/475656/google-color.svg"
+              alt="Google icon"
+              className="mr-2 h-4 w-4"
+            />
+            Continue with Google
           </Button>
-        </div>
 
-        <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border/80">
-          <span className="relative z-10 bg-card px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Or continue with
-          </span>
+          {/* Security badge footer */}
+          <div className="flex items-center justify-center gap-1.5 pt-2 text-[11px] text-muted-foreground/80">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Encrypted AI Neural Link • 256-bit Protection</span>
+          </div>
         </div>
-
-        <Button
-          variant="outline"
-          type="button"
-          className="h-10 w-full"
-          onClick={() => console.log("UI: Google button clicked")}
-        >
-          <img
-            src="https://www.svgrepo.com/show/475656/google-color.svg"
-            alt="Google icon"
-            className="mr-2 h-4 w-4"
-          />
-          Continue with Google
-        </Button>
       </div>
     </div>
   );
@@ -361,6 +392,18 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const toggleForm = () => setIsSignIn((prev) => !prev);
 
+  // Mouse coordinates for right-side interactive spotlight
+  const rightContainerRef = useRef<HTMLDivElement>(null);
+  const [spotlightPos, setSpotlightPos] = useState({ x: 50, y: 50 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!rightContainerRef.current) return;
+    const rect = rightContainerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setSpotlightPos({ x, y });
+  };
+
   const finalSignInContent = {
     quote: { ...defaultSignInContent.quote, ...signInContent.quote },
   };
@@ -371,7 +414,7 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
   const currentContent = isSignIn ? finalSignInContent : finalSignUpContent;
 
   return (
-    <div className="w-full min-h-screen md:grid md:grid-cols-2">
+    <div className="relative w-full min-h-screen md:grid md:grid-cols-2 overflow-hidden">
       <style>{`
         input[type="password"]::-ms-reveal,
         input[type="password"]::-ms-clear {
@@ -380,9 +423,19 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
       `}</style>
 
       {/* LEFT SIDE: Interactive Character with Moving Eye & Typewriter Quote */}
-      <div className="relative flex flex-col items-center justify-center p-6 md:p-12 bg-muted/20 dark:bg-card/30 border-b md:border-b-0 md:border-r border-border/50 transition-colors duration-500 overflow-hidden min-h-[380px] md:min-h-screen">
-        {/* Ambient radial glow */}
-        <div className="absolute w-72 h-72 rounded-full bg-amber-400/10 dark:bg-yellow-400/10 blur-3xl pointer-events-none" />
+      <div className="relative flex flex-col items-center justify-center p-6 md:p-12 bg-muted/25 dark:bg-card/25 border-b md:border-b-0 md:border-r border-border/50 transition-colors duration-500 overflow-hidden min-h-[380px] md:min-h-screen">
+        {/* Subtle grid pattern background on left */}
+        <div
+          className="absolute inset-0 opacity-[0.03] dark:opacity-[0.07] pointer-events-none"
+          style={{
+            backgroundImage: `radial-gradient(circle, currentColor 1px, transparent 1px)`,
+            backgroundSize: "24px 24px",
+          }}
+        />
+
+        {/* Ambient radial glows */}
+        <div className="absolute w-80 h-80 rounded-full bg-amber-400/15 dark:bg-yellow-400/10 blur-3xl pointer-events-none animate-pulse" />
+        <div className="absolute -bottom-10 -left-10 w-64 h-64 rounded-full bg-amber-500/10 dark:bg-amber-500/5 blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col items-center justify-center gap-8 max-w-sm">
           {/* Character with animated eye following cursor */}
@@ -406,13 +459,55 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
         </div>
       </div>
 
-      {/* RIGHT SIDE: Authentication Form Box */}
-      <div className="flex items-center justify-center p-4 sm:p-6 md:p-10 min-h-[500px] md:min-h-screen">
-        <AuthFormContainer
-          isSignIn={isSignIn}
-          onToggle={toggleForm}
-          onPasswordFocusChange={setIsPasswordFocused}
+      {/* RIGHT SIDE: Rich Atmospheric Background + Authentication Form */}
+      <div
+        ref={rightContainerRef}
+        onMouseMove={handleMouseMove}
+        className="relative flex items-center justify-center p-4 sm:p-8 md:p-12 min-h-[520px] md:min-h-screen overflow-hidden"
+      >
+        {/* 1. Interactive Cursor Spotlight Gradient */}
+        <div
+          className="absolute inset-0 pointer-events-none transition-opacity duration-300"
+          style={{
+            background: `radial-gradient(600px circle at ${spotlightPos.x}% ${spotlightPos.y}%, rgba(245, 158, 11, 0.08), transparent 50%)`,
+          }}
         />
+
+        {/* 2. Delicate Architectural Dot Matrix Grid */}
+        <div
+          className="absolute inset-0 opacity-[0.04] dark:opacity-[0.08] pointer-events-none"
+          style={{
+            backgroundImage: `radial-gradient(circle, currentColor 1px, transparent 1px)`,
+            backgroundSize: "28px 28px",
+            maskImage: "radial-gradient(ellipse 70% 60% at 50% 50%, #000 60%, transparent 100%)",
+            WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 50%, #000 60%, transparent 100%)",
+          }}
+        />
+
+        {/* 3. Glowing Aurora Orbs in Corners */}
+        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-gradient-to-br from-amber-500/15 via-yellow-400/10 to-transparent blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-28 -left-20 w-96 h-96 rounded-full bg-gradient-to-tr from-sky-500/10 via-amber-400/5 to-transparent blur-3xl pointer-events-none" />
+
+        {/* 4. Subtle Floating Geometric Concentric Circles */}
+        <div className="absolute w-[500px] h-[500px] rounded-full border border-border/30 dark:border-border/20 pointer-events-none opacity-40 animate-[spin_120s_linear_infinite]" />
+        <div className="absolute w-[680px] h-[680px] rounded-full border border-dashed border-border/20 dark:border-border/15 pointer-events-none opacity-30 animate-[spin_180s_linear_infinite_reverse]" />
+
+        {/* 5. Delicate Sci-Fi Corner Crosshair Accents */}
+        <div className="absolute top-8 left-8 text-border/60 font-mono text-xs select-none pointer-events-none hidden sm:block">
+          + 01 // AUTH_PORTAL
+        </div>
+        <div className="absolute bottom-8 right-8 text-border/60 font-mono text-xs select-none pointer-events-none hidden sm:block">
+          HIREMIND_OS [ACTIVE]
+        </div>
+
+        {/* Form Container */}
+        <div className="relative z-10 w-full flex justify-center">
+          <AuthFormContainer
+            isSignIn={isSignIn}
+            onToggle={toggleForm}
+            onPasswordFocusChange={setIsPasswordFocused}
+          />
+        </div>
       </div>
     </div>
   );
