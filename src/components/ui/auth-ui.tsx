@@ -513,11 +513,11 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
 
       {/* MAIN TWO-COLUMN CONTENT GRID */}
       <div className="relative z-10 w-full min-h-screen md:grid md:grid-cols-2">
-        {/* LEFT SIDE: Text Placed Above the Character (Anchored at Bottom) */}
-        <div className="relative flex flex-col justify-end items-center p-6 md:p-10 pb-0 md:pb-0 min-h-[440px] md:min-h-screen overflow-hidden gap-6">
+        {/* LEFT SIDE: Text Placed Above the Character with Generous Clearance */}
+        <div className="relative flex flex-col justify-end items-center p-6 md:p-10 pb-0 md:pb-0 min-h-[440px] md:min-h-screen overflow-hidden gap-8 md:gap-10">
           
-          {/* Typewriter Quote Section Directly Above the Character */}
-          <div className="flex items-center justify-center max-w-sm px-4">
+          {/* Typewriter Quote Section with Ample Clearance Above the Character */}
+          <div className="flex items-center justify-center max-w-sm px-4 mb-2">
             <blockquote className="space-y-2 text-center text-foreground">
               <p className="text-xl md:text-2xl font-medium tracking-tight leading-relaxed">
                 “

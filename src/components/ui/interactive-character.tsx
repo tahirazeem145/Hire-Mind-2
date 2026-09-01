@@ -277,19 +277,19 @@ export function InteractiveCharacter({
 
   return (
     <div className="relative flex flex-col items-center select-none">
-      {/* 1. Interactive Speech / Emote Bubble */}
+      {/* 1. Interactive Speech / Emote Bubble (Positioned safely to the right-top side so it never collides with the quote above) */}
       <div
-        className={`absolute -top-14 z-30 transition-all duration-300 transform pointer-events-none ${
+        className={`absolute top-6 -right-4 sm:-right-16 md:-right-24 z-30 transition-all duration-300 transform pointer-events-none ${
           bubbleText
             ? "opacity-100 translate-y-0 scale-100"
-            : "opacity-0 translate-y-3 scale-90"
+            : "opacity-0 translate-y-2 scale-90"
         }`}
       >
-        <div className="relative bg-card/95 dark:bg-card/90 text-foreground text-xs sm:text-sm font-semibold px-4 py-2 rounded-2xl shadow-xl border border-amber-500/30 backdrop-blur-md whitespace-nowrap flex items-center gap-1.5 animate-bounce">
+        <div className="relative bg-card/95 dark:bg-card/90 text-foreground text-xs sm:text-sm font-semibold px-3.5 py-1.5 rounded-2xl shadow-xl border border-amber-500/30 backdrop-blur-md whitespace-nowrap flex items-center gap-1.5 animate-bounce">
           <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
           <span>{bubbleText || "Bello!"}</span>
-          {/* Speech bubble tail pointer */}
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-x-[6px] border-x-transparent border-t-[8px] border-t-card" />
+          {/* Speech bubble tail pointing left to minion */}
+          <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-0 h-0 border-y-[5px] border-y-transparent border-r-[7px] border-r-card" />
         </div>
       </div>
 
