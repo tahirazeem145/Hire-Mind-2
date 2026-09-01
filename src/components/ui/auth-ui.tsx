@@ -105,13 +105,13 @@ const Label = React.forwardRef<
 Label.displayName = LabelPrimitive.Root.displayName;
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-input dark:border-input/50 bg-background hover:bg-accent hover:text-accent-foreground",
+        outline: "border border-border/80 dark:border-border/60 bg-background/50 hover:bg-accent hover:text-accent-foreground shadow-sm",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary-foreground/60 underline-offset-4 hover:underline",
@@ -146,7 +146,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
       <input
         type={type}
         className={cn(
-          "flex h-10 w-full rounded-lg border border-input dark:border-input/50 bg-background px-3 py-3 text-sm text-foreground shadow-sm shadow-black/5 transition-shadow placeholder:text-muted-foreground/70 focus-visible:bg-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+          "flex h-10 w-full rounded-lg border border-border/90 dark:border-border/70 bg-card/60 dark:bg-card/40 px-3.5 py-2 text-sm text-foreground shadow-sm transition-all placeholder:text-muted-foreground/70 hover:border-border focus-visible:border-foreground/40 dark:focus-visible:border-foreground/50 focus-visible:ring-2 focus-visible:ring-ring/20 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
           className
         )}
         ref={ref}
@@ -183,15 +183,15 @@ PasswordInput.displayName = "PasswordInput";
 function SignInForm() {
   const handleSignIn = (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); console.log("UI: Sign In form submitted"); };
   return (
-    <form onSubmit={handleSignIn} autoComplete="on" className="flex flex-col gap-8">
+    <form onSubmit={handleSignIn} autoComplete="on" className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold">Sign in to your account</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Sign in to your account</h1>
         <p className="text-balance text-sm text-muted-foreground">Enter your email below to sign in</p>
       </div>
       <div className="grid gap-4">
         <div className="grid gap-2"><Label htmlFor="email">Email</Label><Input id="email" name="email" type="email" placeholder="m@example.com" required autoComplete="email" /></div>
         <PasswordInput name="password" label="Password" required autoComplete="current-password" placeholder="Password" />
-        <Button type="submit" variant="outline" className="mt-2">Sign In</Button>
+        <Button type="submit" variant="default" className="mt-2 h-10 w-full font-medium">Sign In</Button>
       </div>
     </form>
   );
@@ -200,16 +200,16 @@ function SignInForm() {
 function SignUpForm() {
   const handleSignUp = (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); console.log("UI: Sign Up form submitted"); };
   return (
-    <form onSubmit={handleSignUp} autoComplete="on" className="flex flex-col gap-8">
+    <form onSubmit={handleSignUp} autoComplete="on" className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold">Create an account</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Create an account</h1>
         <p className="text-balance text-sm text-muted-foreground">Enter your details below to sign up</p>
       </div>
       <div className="grid gap-4">
-        <div className="grid gap-1"><Label htmlFor="name">Full Name</Label><Input id="name" name="name" type="text" placeholder="John Doe" required autoComplete="name" /></div>
+        <div className="grid gap-2"><Label htmlFor="name">Full Name</Label><Input id="name" name="name" type="text" placeholder="John Doe" required autoComplete="name" /></div>
         <div className="grid gap-2"><Label htmlFor="email">Email</Label><Input id="email" name="email" type="email" placeholder="m@example.com" required autoComplete="email" /></div>
         <PasswordInput name="password" label="Password" required autoComplete="new-password" placeholder="Password"/>
-        <Button type="submit" variant="outline" className="mt-2">Sign Up</Button>
+        <Button type="submit" variant="default" className="mt-2 h-10 w-full font-medium">Sign Up</Button>
       </div>
     </form>
   );
@@ -217,21 +217,26 @@ function SignUpForm() {
 
 function AuthFormContainer({ isSignIn, onToggle }: { isSignIn: boolean; onToggle: () => void; }) {
     return (
-        <div className="mx-auto grid w-[350px] gap-2">
-            {isSignIn ? <SignInForm /> : <SignUpForm />}
-            <div className="text-center text-sm">
-                {isSignIn ? "Don't have an account?" : "Already have an account?"}{" "}
-                <Button variant="link" className="pl-1 text-foreground" onClick={onToggle}>
-                    {isSignIn ? "Sign up" : "Sign in"}
+        <div className="w-full max-w-[400px] rounded-2xl border border-border/80 dark:border-border/60 bg-card/60 dark:bg-card/40 p-6 sm:p-8 shadow-xl shadow-black/5 dark:shadow-black/20 backdrop-blur-md transition-all duration-300">
+            <div className="flex flex-col gap-6">
+                {isSignIn ? <SignInForm /> : <SignUpForm />}
+                
+                <div className="text-center text-sm">
+                    {isSignIn ? "Don't have an account?" : "Already have an account?"}{" "}
+                    <Button variant="link" className="pl-1 text-foreground font-semibold" onClick={onToggle}>
+                        {isSignIn ? "Sign up" : "Sign in"}
+                    </Button>
+                </div>
+                
+                <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border/80">
+                    <span className="relative z-10 bg-card px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Or continue with</span>
+                </div>
+                
+                <Button variant="outline" type="button" className="h-10 w-full" onClick={() => console.log("UI: Google button clicked")}>
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google icon" className="mr-2 h-4 w-4" />
+                    Continue with Google
                 </Button>
             </div>
-            <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
-                <span className="relative z-10 bg-background px-2 text-muted-foreground">Or continue with</span>
-            </div>
-            <Button variant="outline" type="button" onClick={() => console.log("UI: Google button clicked")}>
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google icon" className="mr-2 h-4 w-4" />
-                Continue with Google
-            </Button>
         </div>
     )
 }
@@ -298,14 +303,14 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
         }
       `}</style>
       
-      {/* Left Column: Form */}
-      <div className="flex h-screen items-center justify-center p-6 md:h-auto md:p-0 md:py-12">
+      {/* Left Column: Form Box with Border */}
+      <div className="flex min-h-screen items-center justify-center p-4 sm:p-6 md:p-10">
         <AuthFormContainer isSignIn={isSignIn} onToggle={toggleForm} />
       </div>
 
       {/* Right Column: Character without background */}
       <div
-        className="hidden md:flex relative flex-col items-center justify-center p-8 bg-muted/20 dark:bg-card/30 border-l border-border/40 transition-colors duration-500 overflow-hidden"
+        className="hidden md:flex relative flex-col items-center justify-center p-8 bg-muted/20 dark:bg-card/30 border-l border-border/50 transition-colors duration-500 overflow-hidden"
       >
         {/* Subtle ambient light glow behind the character */}
         <div className="absolute w-72 h-72 rounded-full bg-amber-400/10 dark:bg-yellow-400/10 blur-3xl pointer-events-none" />
