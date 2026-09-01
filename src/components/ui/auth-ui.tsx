@@ -456,10 +456,10 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
           </div>
 
           {/* Character Placed at the Bottom with Animated Cursor Eye Tracking */}
-          <div className="mt-auto flex justify-center items-end w-full pt-4">
+          <div className="mt-auto flex justify-center items-end w-full pt-2">
             <InteractiveCharacter
               isPasswordFocused={isPasswordFocused}
-              className="max-w-[200px] md:max-w-[230px]"
+              className="max-w-[280px] sm:max-w-[340px] md:max-w-[380px] lg:max-w-[430px] xl:max-w-[460px]"
             />
           </div>
         </div>

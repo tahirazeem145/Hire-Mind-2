@@ -88,8 +88,8 @@ export function InteractiveCharacter({
       const distance = Math.hypot(dx, dy);
       const angle = Math.atan2(dy, dx);
 
-      // Max eye travel distance in pixels (scaled relative to container size)
-      const maxTravel = Math.min(rect.width * 0.058, 16);
+      // Max eye travel distance in pixels (scaled dynamically with container size)
+      const maxTravel = rect.width * 0.054;
       const intensity = Math.min(1, distance / 350);
       const travel = maxTravel * intensity;
 
@@ -110,8 +110,10 @@ export function InteractiveCharacter({
 
   // When password field is focused, eye shyly looks down or away
   useEffect(() => {
-    if (isPasswordFocused) {
-      targetPos.current = { x: -8, y: 12 };
+    if (containerRef.current && isPasswordFocused) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const travel = rect.width * 0.045;
+      targetPos.current = { x: -travel * 0.5, y: travel };
     }
   }, [isPasswordFocused]);
 
@@ -121,11 +123,10 @@ export function InteractiveCharacter({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={`relative select-none transition-transform duration-300 ${
-        isHovered ? "scale-[1.03]" : "scale-100"
+        isHovered ? "scale-[1.02]" : "scale-100"
       } ${className}`}
       style={{
         width: "100%",
-        maxWidth: "240px",
         aspectRatio: "420 / 515",
       }}
     >
@@ -206,7 +207,7 @@ export function InteractiveCharacter({
       <img
         src="/minion_frame.png"
         alt="HireMind AI Character"
-        className="relative z-10 w-full h-full object-contain pointer-events-none drop-shadow-[0_12px_24px_rgba(0,0,0,0.2)]"
+        className="relative z-10 w-full h-full object-contain pointer-events-none drop-shadow-[0_16px_32px_rgba(0,0,0,0.28)]"
         draggable={false}
       />
 
