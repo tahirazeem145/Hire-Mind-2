@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState, useId, useEffect, useRef } from "react";
+import { useState, useId, useEffect } from "react";
 import { Slot } from "@radix-ui/react-slot";
 import * as LabelPrimitive from "@radix-ui/react-label";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -312,7 +312,7 @@ function AuthFormContainer({
 }) {
   return (
     <div className="relative w-full max-w-[420px]">
-      {/* Decorative subtle ambient card glow */}
+      {/* Decorative ambient card glow */}
       <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-primary/10 blur-xl opacity-80 pointer-events-none" />
 
       {/* Main Glass Card */}
@@ -393,18 +393,6 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const toggleForm = () => setIsSignIn((prev) => !prev);
 
-  // Mouse coordinates for right-side interactive spotlight
-  const rightContainerRef = useRef<HTMLDivElement>(null);
-  const [spotlightPos, setSpotlightPos] = useState({ x: 50, y: 50 });
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!rightContainerRef.current) return;
-    const rect = rightContainerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setSpotlightPos({ x, y });
-  };
-
   const finalSignInContent = {
     quote: { ...defaultSignInContent.quote, ...signInContent.quote },
   };
@@ -415,7 +403,7 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
   const currentContent = isSignIn ? finalSignInContent : finalSignUpContent;
 
   return (
-    <div className="relative w-full min-h-screen md:grid md:grid-cols-2 overflow-hidden">
+    <div className="relative w-full min-h-screen bg-muted/20 dark:bg-card/25 transition-colors duration-500 overflow-hidden">
       <style>{`
         input[type="password"]::-ms-reveal,
         input[type="password"]::-ms-clear {
@@ -423,77 +411,62 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
         }
       `}</style>
 
-      {/* LEFT SIDE: Interactive Character with Moving Eye & Typewriter Quote */}
-      <div className="relative flex flex-col items-center justify-center p-6 md:p-12 bg-muted/25 dark:bg-card/25 border-b md:border-b-0 md:border-r border-border/50 transition-colors duration-500 overflow-hidden min-h-[380px] md:min-h-screen">
-        {/* Interactive expanding dot grid on left */}
-        <InteractiveDotGrid dotSpacing={26} baseRadius={1.0} maxRadius={3.8} influenceRadius={140} />
+      {/* UNIFIED FULL-SCREEN BACKGROUND EFFECTS (Both Left & Right) */}
+      {/* 1. Interactive Dynamic Expanding Dot Grid Canvas across entire screen */}
+      <InteractiveDotGrid dotSpacing={28} baseRadius={1.2} maxRadius={5.0} influenceRadius={160} />
 
-        {/* Ambient radial glows */}
-        <div className="absolute w-80 h-80 rounded-full bg-amber-400/15 dark:bg-yellow-400/10 blur-3xl pointer-events-none animate-pulse" />
-        <div className="absolute -bottom-10 -left-10 w-64 h-64 rounded-full bg-amber-500/10 dark:bg-amber-500/5 blur-3xl pointer-events-none" />
+      {/* 2. Seamless Ambient Glow Orbs */}
+      <div className="absolute top-1/4 -left-20 w-96 h-96 rounded-full bg-amber-400/15 dark:bg-yellow-400/10 blur-3xl pointer-events-none animate-pulse" />
+      <div className="absolute top-1/3 -right-20 w-96 h-96 rounded-full bg-gradient-to-br from-amber-500/15 via-yellow-400/10 to-transparent blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-28 left-1/3 w-96 h-96 rounded-full bg-gradient-to-tr from-sky-500/10 via-amber-400/5 to-transparent blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col items-center justify-center gap-8 max-w-sm">
-          {/* Character with animated eye following cursor */}
-          <InteractiveCharacter isPasswordFocused={isPasswordFocused} />
+      {/* 3. Floating Subtle Geometric Orbital Rings */}
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full border border-border/20 dark:border-border/15 pointer-events-none opacity-30 animate-[spin_180s_linear_infinite]" />
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[1100px] h-[1100px] rounded-full border border-dashed border-border/15 dark:border-border/10 pointer-events-none opacity-20 animate-[spin_240s_linear_infinite_reverse]" />
 
-          {/* Quote Section */}
-          <blockquote className="space-y-2 text-center text-foreground">
-            <p className="text-lg font-medium">
-              “
-              <Typewriter
-                key={currentContent.quote.text}
-                text={currentContent.quote.text}
-                speed={60}
-              />
-              ”
-            </p>
-            <cite className="block text-sm font-light text-muted-foreground not-italic">
-              — {currentContent.quote.author}
-            </cite>
-          </blockquote>
-        </div>
+      {/* 4. Tech Crosshairs */}
+      <div className="absolute top-6 left-8 text-border/70 font-mono text-[11px] select-none pointer-events-none hidden sm:block">
+        + 01 // HIREMIND_AI_CORE
+      </div>
+      <div className="absolute top-6 right-8 text-border/70 font-mono text-[11px] select-none pointer-events-none hidden sm:block">
+        NEURAL_LINK [ONLINE]
       </div>
 
-      {/* RIGHT SIDE: Interactive Expanding Dot Grid Background + Authentication Form */}
-      <div
-        ref={rightContainerRef}
-        onMouseMove={handleMouseMove}
-        className="relative flex items-center justify-center p-4 sm:p-8 md:p-12 min-h-[520px] md:min-h-screen overflow-hidden"
-      >
-        {/* 1. Interactive Dynamic Expanding Dot Grid Canvas */}
-        <InteractiveDotGrid dotSpacing={28} baseRadius={1.2} maxRadius={5.2} influenceRadius={170} />
+      {/* MAIN TWO-COLUMN CONTENT GRID */}
+      <div className="relative z-10 w-full min-h-screen md:grid md:grid-cols-2">
+        {/* LEFT SIDE: Interactive Character with Moving Eye & Typewriter Quote */}
+        <div className="relative flex flex-col items-center justify-center p-6 md:p-12 border-b md:border-b-0 md:border-r border-border/40 min-h-[380px] md:min-h-screen">
+          <div className="relative z-10 flex flex-col items-center justify-center gap-8 max-w-sm">
+            {/* Character with animated eye following cursor */}
+            <InteractiveCharacter isPasswordFocused={isPasswordFocused} />
 
-        {/* 2. Interactive Cursor Spotlight Gradient */}
-        <div
-          className="absolute inset-0 pointer-events-none transition-opacity duration-300"
-          style={{
-            background: `radial-gradient(600px circle at ${spotlightPos.x}% ${spotlightPos.y}%, rgba(245, 158, 11, 0.08), transparent 50%)`,
-          }}
-        />
-
-        {/* 3. Glowing Aurora Orbs in Corners */}
-        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-gradient-to-br from-amber-500/15 via-yellow-400/10 to-transparent blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-28 -left-20 w-96 h-96 rounded-full bg-gradient-to-tr from-sky-500/10 via-amber-400/5 to-transparent blur-3xl pointer-events-none" />
-
-        {/* 4. Subtle Floating Geometric Concentric Circles */}
-        <div className="absolute w-[500px] h-[500px] rounded-full border border-border/30 dark:border-border/20 pointer-events-none opacity-40 animate-[spin_120s_linear_infinite]" />
-        <div className="absolute w-[680px] h-[680px] rounded-full border border-dashed border-border/20 dark:border-border/15 pointer-events-none opacity-30 animate-[spin_180s_linear_infinite_reverse]" />
-
-        {/* 5. Delicate Sci-Fi Corner Crosshair Accents */}
-        <div className="absolute top-8 left-8 text-border/60 font-mono text-xs select-none pointer-events-none hidden sm:block">
-          + 01 // AUTH_PORTAL
-        </div>
-        <div className="absolute bottom-8 right-8 text-border/60 font-mono text-xs select-none pointer-events-none hidden sm:block">
-          HIREMIND_OS [ACTIVE]
+            {/* Quote Section */}
+            <blockquote className="space-y-2 text-center text-foreground">
+              <p className="text-lg font-medium">
+                “
+                <Typewriter
+                  key={currentContent.quote.text}
+                  text={currentContent.quote.text}
+                  speed={60}
+                />
+                ”
+              </p>
+              <cite className="block text-sm font-light text-muted-foreground not-italic">
+                — {currentContent.quote.author}
+              </cite>
+            </blockquote>
+          </div>
         </div>
 
-        {/* Form Container */}
-        <div className="relative z-10 w-full flex justify-center">
-          <AuthFormContainer
-            isSignIn={isSignIn}
-            onToggle={toggleForm}
-            onPasswordFocusChange={setIsPasswordFocused}
-          />
+        {/* RIGHT SIDE: Authentication Form Box */}
+        <div className="relative flex items-center justify-center p-4 sm:p-8 md:p-12 min-h-[520px] md:min-h-screen">
+          <div className="w-full flex justify-center">
+            <AuthFormContainer
+              isSignIn={isSignIn}
+              onToggle={toggleForm}
+              onPasswordFocusChange={setIsPasswordFocused}
+            />
+          </div>
         </div>
       </div>
     </div>
