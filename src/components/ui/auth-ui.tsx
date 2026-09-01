@@ -434,12 +434,12 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
 
       {/* MAIN TWO-COLUMN CONTENT GRID */}
       <div className="relative z-10 w-full min-h-screen md:grid md:grid-cols-2">
-        {/* LEFT SIDE: Text Centered in Middle & Character Anchored at the Bottom (No Middle Line) */}
-        <div className="relative flex flex-col justify-between items-center p-6 md:p-10 pb-0 md:pb-0 min-h-[440px] md:min-h-screen overflow-hidden">
+        {/* LEFT SIDE: Text Placed Above the Character (Anchored at Bottom) */}
+        <div className="relative flex flex-col justify-end items-center p-6 md:p-10 pb-0 md:pb-0 min-h-[440px] md:min-h-screen overflow-hidden gap-6">
           
-          {/* Centered Typewriter Quote Section */}
-          <div className="flex-1 flex items-center justify-center max-w-sm px-4 my-auto">
-            <blockquote className="space-y-3 text-center text-foreground">
+          {/* Typewriter Quote Section Directly Above the Character */}
+          <div className="flex items-center justify-center max-w-sm px-4">
+            <blockquote className="space-y-2 text-center text-foreground">
               <p className="text-xl md:text-2xl font-medium tracking-tight leading-relaxed">
                 “
                 <Typewriter
@@ -456,7 +456,7 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
           </div>
 
           {/* Character Placed at the Bottom with Animated Cursor Eye Tracking */}
-          <div className="mt-auto flex justify-center items-end w-full pt-2">
+          <div className="flex justify-center items-end w-full">
             <InteractiveCharacter
               isPasswordFocused={isPasswordFocused}
               className="max-w-[280px] sm:max-w-[340px] md:max-w-[380px] lg:max-w-[430px] xl:max-w-[460px]"
