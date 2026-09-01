@@ -411,7 +411,7 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
         }
       `}</style>
 
-      {/* UNIFIED FULL-SCREEN BACKGROUND EFFECTS (Both Left & Right) */}
+      {/* UNIFIED FULL-SCREEN BACKGROUND EFFECTS */}
       {/* 1. Interactive Dynamic Expanding Dot Grid Canvas across entire screen */}
       <InteractiveDotGrid dotSpacing={28} baseRadius={1.2} maxRadius={5.0} influenceRadius={160} />
 
@@ -434,15 +434,13 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
 
       {/* MAIN TWO-COLUMN CONTENT GRID */}
       <div className="relative z-10 w-full min-h-screen md:grid md:grid-cols-2">
-        {/* LEFT SIDE: Interactive Character with Moving Eye & Typewriter Quote */}
-        <div className="relative flex flex-col items-center justify-center p-6 md:p-12 border-b md:border-b-0 md:border-r border-border/40 min-h-[380px] md:min-h-screen">
-          <div className="relative z-10 flex flex-col items-center justify-center gap-8 max-w-sm">
-            {/* Character with animated eye following cursor */}
-            <InteractiveCharacter isPasswordFocused={isPasswordFocused} />
-
-            {/* Quote Section */}
-            <blockquote className="space-y-2 text-center text-foreground">
-              <p className="text-lg font-medium">
+        {/* LEFT SIDE: Text Centered in Middle & Character Anchored at the Bottom (No Middle Line) */}
+        <div className="relative flex flex-col justify-between items-center p-6 md:p-10 pb-0 md:pb-0 min-h-[440px] md:min-h-screen overflow-hidden">
+          
+          {/* Centered Typewriter Quote Section */}
+          <div className="flex-1 flex items-center justify-center max-w-sm px-4 my-auto">
+            <blockquote className="space-y-3 text-center text-foreground">
+              <p className="text-xl md:text-2xl font-medium tracking-tight leading-relaxed">
                 “
                 <Typewriter
                   key={currentContent.quote.text}
@@ -455,6 +453,14 @@ export function AuthUI({ signInContent = {}, signUpContent = {} }: AuthUIProps) 
                 — {currentContent.quote.author}
               </cite>
             </blockquote>
+          </div>
+
+          {/* Character Placed at the Bottom with Animated Cursor Eye Tracking */}
+          <div className="mt-auto flex justify-center items-end w-full pt-4">
+            <InteractiveCharacter
+              isPasswordFocused={isPasswordFocused}
+              className="max-w-[200px] md:max-w-[230px]"
+            />
           </div>
         </div>
 
