@@ -8,6 +8,7 @@ import type {
 import type { ResumeAnalysisResult } from "@/types/resume";
 
 const STORAGE_KEY = "hiremind_gemini_api_key";
+const MODEL_STORAGE_KEY = "hiremind_gemini_model";
 
 /**
  * Retrieve active Gemini API Key from localStorage or environment variable
@@ -33,10 +34,22 @@ export function setStoredGeminiApiKey(key: string): void {
   if (typeof window !== "undefined") {
     if (!key || key.trim().length === 0) {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(MODEL_STORAGE_KEY);
     } else {
       localStorage.setItem(STORAGE_KEY, key.trim());
     }
   }
+}
+
+/**
+ * Get the active verified model name
+ */
+export function getStoredGeminiModel(): string {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem(MODEL_STORAGE_KEY);
+    if (saved) return saved;
+  }
+  return "gemini-1.5-flash";
 }
 
 /**
@@ -63,42 +76,119 @@ function cleanJsonString(raw: string): string {
 }
 
 /**
- * Test a Gemini API key and return exact status and model
+ * Fetch list of valid models directly from Google's ModelService API
+ */
+export async function getAvailableModelsFromGoogle(apiKey: string): Promise<{
+  success: boolean;
+  models: string[];
+  error?: string;
+}> {
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey.trim()}`
+    );
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return {
+        success: false,
+        models: [],
+        error: data?.error?.message || `Google API Error (${res.status}: ${res.statusText})`,
+      };
+    }
+
+    const data = await res.json();
+    if (Array.isArray(data.models)) {
+      const generateModels = data.models
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .filter((m: any) =>
+          Array.isArray(m.supportedGenerationMethods) &&
+          m.supportedGenerationMethods.includes("generateContent")
+        )
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .map((m: any) => m.name.replace(/^models\//, ""));
+
+      return {
+        success: true,
+        models: generateModels,
+      };
+    }
+
+    return {
+      success: true,
+      models: ["gemini-1.5-flash", "gemini-1.5-pro"],
+    };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      models: [],
+      error: err instanceof Error ? err.message : "Network error reaching Google API",
+    };
+  }
+}
+
+/**
+ * Test a Gemini API key using dynamic model discovery
  */
 export async function testGeminiConnection(apiKey: string): Promise<{
   success: boolean;
   model?: string;
   error?: string;
 }> {
-  const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp"];
-  let lastErrorMessage = "";
-
-  for (const model of models) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: "Hello" }] }],
-        }),
-      });
-
-      if (res.ok) {
-        return { success: true, model };
-      } else {
-        const data = await res.json().catch(() => ({}));
-        lastErrorMessage = data?.error?.message || `HTTP ${res.status}: ${res.statusText}`;
-      }
-    } catch (fetchErr: unknown) {
-      lastErrorMessage = fetchErr instanceof Error ? fetchErr.message : "Network error";
-    }
+  const discovery = await getAvailableModelsFromGoogle(apiKey);
+  if (!discovery.success) {
+    return {
+      success: false,
+      error: discovery.error || "Failed to authenticate with Google Gemini API.",
+    };
   }
 
-  return {
-    success: false,
-    error: lastErrorMessage || "Failed to reach Gemini API. Please check your API key.",
-  };
+  // Pick the best available model (priority: 1.5-flash, 2.0-flash, 1.5-pro, or first available)
+  const preferredOrder = [
+    "gemini-1.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash-latest",
+    "gemini-1.5-pro",
+    "gemini-1.5-pro-latest",
+  ];
+
+  let selectedModel = discovery.models.find((m) => preferredOrder.includes(m));
+  if (!selectedModel && discovery.models.length > 0) {
+    selectedModel = discovery.models[0];
+  }
+  if (!selectedModel) {
+    selectedModel = "gemini-1.5-flash";
+  }
+
+  // Quick verification probe with selected model
+  try {
+    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey.trim()}`;
+    const probeRes = await fetch(testUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: "Respond with the word OK" }] }],
+      }),
+    });
+
+    if (probeRes.ok) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem(MODEL_STORAGE_KEY, selectedModel);
+      }
+      return { success: true, model: selectedModel };
+    } else {
+      const errData = await probeRes.json().catch(() => ({}));
+      return {
+        success: false,
+        error: errData?.error?.message || `Probe failed on model ${selectedModel}`,
+      };
+    }
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Network probe failed",
+    };
+  }
 }
 
 /**
@@ -114,10 +204,17 @@ async function callGemini(
     throw new Error("Gemini API Key is not configured. Please enter your API key.");
   }
 
-  const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp"];
+  const activeModel = getStoredGeminiModel();
+  const modelsToTry = [
+    activeModel,
+    "gemini-1.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-pro",
+  ].filter((v, i, a) => a.indexOf(v) === i);
+
   let lastError = "";
 
-  for (const model of models) {
+  for (const model of modelsToTry) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
       const payload: Record<string, unknown> = {
