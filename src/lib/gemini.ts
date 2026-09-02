@@ -49,7 +49,7 @@ export function getStoredGeminiModel(): string {
     const saved = localStorage.getItem(MODEL_STORAGE_KEY);
     if (saved) return saved;
   }
-  return "gemini-1.5-flash";
+  return "gemini-3.6-flash";
 }
 
 /**
@@ -116,7 +116,7 @@ export async function getAvailableModelsFromGoogle(apiKey: string): Promise<{
 
     return {
       success: true,
-      models: ["gemini-1.5-flash", "gemini-1.5-pro"],
+      models: ["gemini-3.6-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
     };
   } catch (err: unknown) {
     return {
@@ -128,7 +128,7 @@ export async function getAvailableModelsFromGoogle(apiKey: string): Promise<{
 }
 
 /**
- * Test a Gemini API key using dynamic model discovery
+ * Test a Gemini API key using dynamic model discovery and probing
  */
 export async function testGeminiConnection(apiKey: string): Promise<{
   success: boolean;
@@ -143,52 +143,55 @@ export async function testGeminiConnection(apiKey: string): Promise<{
     };
   }
 
-  // Pick the best available model (priority: 1.5-flash, 2.0-flash, 1.5-pro, or first available)
   const preferredOrder = [
-    "gemini-1.5-flash",
+    "gemini-3.6-flash",
     "gemini-2.0-flash",
-    "gemini-1.5-flash-latest",
+    "gemini-1.5-flash",
+    "gemini-1.5-flash-8b",
     "gemini-1.5-pro",
-    "gemini-1.5-pro-latest",
+    "gemini-2.0-flash-001",
+    "gemini-1.5-flash-002",
   ];
 
-  let selectedModel = discovery.models.find((m) => preferredOrder.includes(m));
-  if (!selectedModel && discovery.models.length > 0) {
-    selectedModel = discovery.models[0];
-  }
-  if (!selectedModel) {
-    selectedModel = "gemini-1.5-flash";
-  }
+  // Sort discovered models so preferred ones are probed first
+  const modelsToProbe = [
+    ...preferredOrder.filter((m) => discovery.models.includes(m)),
+    ...discovery.models.filter((m) => !preferredOrder.includes(m)),
+    "gemini-3.6-flash",
+    "gemini-1.5-flash",
+  ].filter((v, i, a) => a.indexOf(v) === i);
 
-  // Quick verification probe with selected model
-  try {
-    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey.trim()}`;
-    const probeRes = await fetch(testUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: "Respond with the word OK" }] }],
-      }),
-    });
+  let lastProbeError = "";
 
-    if (probeRes.ok) {
-      if (typeof window !== "undefined") {
-        localStorage.setItem(MODEL_STORAGE_KEY, selectedModel);
+  for (const model of modelsToProbe) {
+    try {
+      const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
+      const probeRes = await fetch(testUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: "Respond with the word OK" }] }],
+        }),
+      });
+
+      if (probeRes.ok) {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(MODEL_STORAGE_KEY, model);
+        }
+        return { success: true, model };
+      } else {
+        const errData = await probeRes.json().catch(() => ({}));
+        lastProbeError = errData?.error?.message || `Probe failed on model ${model}`;
       }
-      return { success: true, model: selectedModel };
-    } else {
-      const errData = await probeRes.json().catch(() => ({}));
-      return {
-        success: false,
-        error: errData?.error?.message || `Probe failed on model ${selectedModel}`,
-      };
+    } catch (err) {
+      lastProbeError = err instanceof Error ? err.message : "Network probe failed";
     }
-  } catch (err) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "Network probe failed",
-    };
   }
+
+  return {
+    success: false,
+    error: lastProbeError || "No working Gemini model could be verified for this key.",
+  };
 }
 
 /**
@@ -207,8 +210,9 @@ async function callGemini(
   const activeModel = getStoredGeminiModel();
   const modelsToTry = [
     activeModel,
-    "gemini-1.5-flash",
+    "gemini-3.6-flash",
     "gemini-2.0-flash",
+    "gemini-1.5-flash",
     "gemini-1.5-pro",
   ].filter((v, i, a) => a.indexOf(v) === i);
 
