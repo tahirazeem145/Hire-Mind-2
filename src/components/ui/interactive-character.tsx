@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Sparkles } from "lucide-react";
 import { minionAudio } from "@/lib/audio";
+import { getGeminiCompanionAdvice, hasGeminiApiKey } from "@/lib/gemini";
 
 interface InteractiveCharacterProps {
   className?: string;
@@ -242,14 +243,20 @@ export function InteractiveCharacter({
     setIsSquished(true);
     setTimeout(() => setIsSquished(false), 350);
 
-    // 3. Random quote bubble
-    const randomQuote = QUOTES_POOL[Math.floor(Math.random() * QUOTES_POOL.length)];
-    setBubbleText(randomQuote);
+    // 3. Dynamic Gemini AI quote / Random quote bubble
+    if (hasGeminiApiKey()) {
+      getGeminiCompanionAdvice().then((tip) => {
+        setBubbleText(tip);
+      });
+    } else {
+      const randomQuote = QUOTES_POOL[Math.floor(Math.random() * QUOTES_POOL.length)];
+      setBubbleText(randomQuote);
+    }
 
     if (bubbleTimeoutRef.current) clearTimeout(bubbleTimeoutRef.current);
     bubbleTimeoutRef.current = setTimeout(() => {
       setBubbleText(null);
-    }, 2800);
+    }, 3800);
 
     // 4. Spawn colorful sparkle particles around click point
     const rect = containerRef.current?.getBoundingClientRect();

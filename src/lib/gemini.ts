@@ -572,3 +572,27 @@ Respond in STRICT JSON:
 
   return JSON.parse(cleanJsonString(raw));
 }
+
+/**
+ * 6. Live AI Mascot Motivational Career Advice
+ */
+export async function getGeminiCompanionAdvice(): Promise<string> {
+  const prompt = `Give a short, punchy (1-sentence, max 10 words), inspiring or witty tech interview tip with 1 emoji. Be energetic and charismatic like a friendly AI career coach. Do not wrap in quotes.`;
+  try {
+    const text = await callGemini(
+      prompt,
+      "You are a cheerful, witty AI career mascot giving lightning-fast interview tips.",
+      false
+    );
+    return text.replace(/^"|"$/g, "").trim();
+  } catch {
+    const pool = [
+      "Quantify your metrics with the STAR formula! 🚀",
+      "Structure beats panic in system design! 💡",
+      "Speak your thought process aloud in interviews! 🎙️",
+      "Highlight your biggest impact first! ⭐",
+      "100% job-ready vibe loaded! 🤖",
+    ];
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+}
