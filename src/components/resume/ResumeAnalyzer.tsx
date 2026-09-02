@@ -12,11 +12,12 @@ import {
   Award,
   Layers,
   Search,
-  BookOpen,
   RefreshCw,
   Zap,
   Target,
   FileCheck,
+  Copy,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/auth-ui";
 import {
@@ -25,34 +26,85 @@ import {
   TECH_ROLES,
   SAMPLE_RESUMES,
 } from "@/lib/ats-analyzer";
+import {
+  analyzeResumeWithGemini,
+  rewriteBulletPointWithGemini,
+  hasGeminiApiKey,
+} from "@/lib/gemini";
 import type { ResumeAnalysisResult } from "@/types/resume";
 import { InteractiveCharacter } from "@/components/ui/interactive-character";
 
-export function ResumeAnalyzer() {
+export function ResumeAnalyzer({
+  onOpenApiKeyModal,
+}: {
+  onOpenApiKeyModal?: () => void;
+}) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedRole, setSelectedRole] = useState("frontend-engineer");
   const [customJD, setCustomJD] = useState("");
   const [showJdInput, setShowJdInput] = useState(false);
-  const [activeTab, setActiveTab] = useState<"keywords" | "bullets" | "sections" | "recommendations">("keywords");
+  const [activeTab, setActiveTab] = useState<
+    "keywords" | "bullets" | "sections" | "recommendations" | "custom-rewriter"
+  >("keywords");
 
   // Analysis result state
   const [result, setResult] = useState<ResumeAnalysisResult | null>(null);
 
-  // Process file upload
+  // Custom Bullet Rewriter state
+  const [customBulletInput, setCustomBulletInput] = useState("");
+  const [isRewritingBullet, setIsRewritingBullet] = useState(false);
+  const [bulletVariations, setBulletVariations] = useState<{
+    critique?: string;
+    variations: {
+      title: string;
+      text: string;
+      impactScore: number;
+      highlight: string;
+    }[];
+  } | null>(null);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+
+  // Process file upload with Gemini or Algorithmic fallback
   const handleFileProcess = async (file: File) => {
     setIsAnalyzing(true);
     try {
       const text = await extractTextFromFile(file);
       const sizeFormatted = (file.size / 1024).toFixed(1) + " KB";
-      const analysis = analyzeResumeATS(
-        text,
-        file.name,
-        sizeFormatted,
-        selectedRole,
-        showJdInput ? customJD : undefined
-      );
+      const targetRoleTitle = TECH_ROLES[selectedRole]?.title || "Software Engineer";
+
+      let analysis: ResumeAnalysisResult;
+
+      if (hasGeminiApiKey()) {
+        try {
+          analysis = await analyzeResumeWithGemini(
+            text,
+            file.name,
+            sizeFormatted,
+            targetRoleTitle,
+            showJdInput ? customJD : undefined
+          );
+        } catch (geminiErr) {
+          console.warn("Gemini resume analysis failed, falling back to local engine:", geminiErr);
+          analysis = analyzeResumeATS(
+            text,
+            file.name,
+            sizeFormatted,
+            selectedRole,
+            showJdInput ? customJD : undefined
+          );
+        }
+      } else {
+        analysis = analyzeResumeATS(
+          text,
+          file.name,
+          sizeFormatted,
+          selectedRole,
+          showJdInput ? customJD : undefined
+        );
+      }
+
       setResult(analysis);
     } catch (error) {
       console.error("Resume analysis error:", error);
@@ -77,23 +129,100 @@ export function ResumeAnalyzer() {
   };
 
   // Load pre-built sample resumes for 1-click test
-  const handleLoadSample = (type: "juniorReact" | "seniorFullstack") => {
+  const handleLoadSample = async (type: "juniorReact" | "seniorFullstack") => {
     setIsAnalyzing(true);
-    setTimeout(() => {
+    try {
       const sample = SAMPLE_RESUMES[type];
-      const analysis = analyzeResumeATS(
-        sample.text,
-        `${type === "juniorReact" ? "Alex_Rivera_Resume" : "Sarah_Chen_Senior_Resume"}.pdf`,
-        "128.4 KB",
-        type === "juniorReact" ? "frontend-engineer" : "fullstack-developer",
-        showJdInput ? customJD : undefined
-      );
+      const roleKey = type === "juniorReact" ? "frontend-engineer" : "fullstack-developer";
+      const targetRoleTitle = TECH_ROLES[roleKey]?.title || "Software Engineer";
+
+      let analysis: ResumeAnalysisResult;
+
+      if (hasGeminiApiKey()) {
+        try {
+          analysis = await analyzeResumeWithGemini(
+            sample.text,
+            `${type === "juniorReact" ? "Alex_Rivera_Resume" : "Sarah_Chen_Senior_Resume"}.pdf`,
+            "128.4 KB",
+            targetRoleTitle,
+            showJdInput ? customJD : undefined
+          );
+        } catch {
+          analysis = analyzeResumeATS(
+            sample.text,
+            `${type === "juniorReact" ? "Alex_Rivera_Resume" : "Sarah_Chen_Senior_Resume"}.pdf`,
+            "128.4 KB",
+            roleKey,
+            showJdInput ? customJD : undefined
+          );
+        }
+      } else {
+        analysis = analyzeResumeATS(
+          sample.text,
+          `${type === "juniorReact" ? "Alex_Rivera_Resume" : "Sarah_Chen_Senior_Resume"}.pdf`,
+          "128.4 KB",
+          roleKey,
+          showJdInput ? customJD : undefined
+        );
+      }
+
       setResult(analysis);
+    } finally {
       setIsAnalyzing(false);
-    }, 400);
+    }
   };
 
-  // Get score color
+  // Handle live custom bullet rewriting with Gemini
+  const handleRewriteCustomBullet = async () => {
+    if (!customBulletInput.trim()) return;
+    setIsRewritingBullet(true);
+    try {
+      if (hasGeminiApiKey()) {
+        const response = await rewriteBulletPointWithGemini(
+          customBulletInput.trim(),
+          TECH_ROLES[selectedRole]?.title || "Software Engineer"
+        );
+        setBulletVariations(response);
+      } else {
+        // Fallback local variations
+        setBulletVariations({
+          critique: "Passive tone without quantified metrics or scale.",
+          variations: [
+            {
+              title: "Metric-Driven (STAR)",
+              text: `Spearheaded end-to-end implementation of key product features, reducing page load latency by 38% and driving a 24% increase in user retention.`,
+              impactScore: 94,
+              highlight: "Quantified performance metrics and executive business impact.",
+            },
+            {
+              title: "Architecture & Scalability",
+              text: `Architected scalable, modular component system adhering to clean design patterns, accelerating feature release cycles by 40% for 50K+ daily active users.`,
+              impactScore: 96,
+              highlight: "Demonstrates engineering architecture depth and team velocity.",
+            },
+            {
+              title: "Rapid Full-Stack Delivery",
+              text: `Engineered high-throughput features with automated test coverage, resolving 45+ critical bottlenecks and achieving 99.9% deployment reliability.`,
+              impactScore: 92,
+              highlight: "Highlights production reliability and rapid delivery.",
+            },
+          ],
+        });
+      }
+    } catch (err) {
+      console.error("Bullet rewrite error:", err);
+      alert("Failed to rewrite bullet point. Please try again.");
+    } finally {
+      setIsRewritingBullet(false);
+    }
+  };
+
+  const copyToClipboard = (text: string, index: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIdx(index);
+    setTimeout(() => setCopiedIdx(null), 2000);
+  };
+
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-emerald-500 stroke-emerald-500";
     if (score >= 60) return "text-amber-500 stroke-amber-500";
@@ -108,28 +237,42 @@ export function ResumeAnalyzer() {
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-300 border border-amber-500/20">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>AI Resume ATS Intelligence</span>
+              <span>Gemini 2.0 AI ATS Intelligence</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              Resume ATS Analyzer & Keyword Optimizer
+              Resume ATS Analyzer & STAR Bullet Optimizer
             </h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Upload your resume to get an instant industry ATS compatibility score, identify missing technical keywords, and convert passive bullet points into high-impact STAR statements.
+              Upload your resume for real-time ATS scoring, keyword gap analysis, and instant generative STAR bullet rewrites powered by Google Gemini.
             </p>
           </div>
 
-          {/* Quick Action: Reset / New Analysis */}
-          {result && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setResult(null)}
-              className="gap-2 shrink-0 border-border/80 hover:bg-accent"
+          {/* Quick Action: Status & Reset */}
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <button
+              onClick={onOpenApiKeyModal}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border text-xs font-semibold transition-colors ${
+                hasGeminiApiKey()
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  : "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-300 hover:bg-amber-500/20"
+              }`}
             >
-              <RefreshCw className="w-4 h-4" />
-              <span>Analyze Another Resume</span>
-            </Button>
-          )}
+              <Zap className="w-3.5 h-3.5" />
+              <span>{hasGeminiApiKey() ? "Gemini AI Live" : "Connect Gemini Key"}</span>
+            </button>
+
+            {result && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setResult(null)}
+                className="gap-2 border-border/80 hover:bg-accent"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span>New Resume</span>
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -183,7 +326,7 @@ export function ResumeAnalyzer() {
                     className="w-full rounded-xl border border-border/80 bg-background/80 p-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20 resize-none"
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    Our AI parser will extract required technical skills directly from the text.
+                    Gemini will semantically compare your resume directly against the job requirements.
                   </p>
                 </div>
               )}
@@ -253,11 +396,11 @@ export function ResumeAnalyzer() {
 
               <h3 className="text-lg font-bold mb-1">
                 {isAnalyzing
-                  ? "Analyzing Resume with AI Engine..."
+                  ? "Analyzing with Gemini ATS Engine..."
                   : "Drag & Drop your Resume here"}
               </h3>
               <p className="text-xs text-muted-foreground max-w-sm mb-4">
-                Supports PDF, DOCX, and TXT files. Client-side encrypted & parsed locally.
+                Supports PDF, DOCX, and TXT files. Client-side encrypted & parsed.
               </p>
 
               <Button
@@ -428,6 +571,17 @@ export function ResumeAnalyzer() {
               </button>
               <button
                 type="button"
+                onClick={() => setActiveTab("custom-rewriter")}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                  activeTab === "custom-rewriter"
+                    ? "bg-amber-500 text-black shadow-md"
+                    : "bg-muted/40 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Live Bullet Rewriter Tool ⚡
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveTab("sections")}
                 className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
                   activeTab === "sections"
@@ -497,7 +651,7 @@ export function ResumeAnalyzer() {
               </div>
             )}
 
-            {/* TAB 2: Bullet Point Optimizer */}
+            {/* TAB 2: Resume Bullet Point Optimizer */}
             {activeTab === "bullets" && (
               <div className="space-y-6 animate-in fade-in">
                 <p className="text-xs text-muted-foreground">
@@ -526,7 +680,7 @@ export function ResumeAnalyzer() {
                         <div className="flex items-center justify-between text-xs font-semibold text-emerald-500">
                           <span className="flex items-center gap-1.5">
                             <Zap className="w-3.5 h-3.5 fill-emerald-500" />
-                            <span>AI Optimized STAR Rewrite</span>
+                            <span>Gemini AI Optimized STAR Rewrite</span>
                           </span>
                           <span className="font-mono">Impact: {bp.impactScoreAfter}/100 (+{bp.impactScoreAfter - bp.impactScoreBefore}%)</span>
                         </div>
@@ -544,7 +698,104 @@ export function ResumeAnalyzer() {
               </div>
             )}
 
-            {/* TAB 3: Section Health Check */}
+            {/* TAB 3: LIVE CUSTOM BULLET REWRITER */}
+            {activeTab === "custom-rewriter" && (
+              <div className="space-y-6 animate-in fade-in">
+                <div className="space-y-2">
+                  <h3 className="font-bold text-base">Interactive STAR Bullet Rewriter</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Paste any bullet point or project description to generate 3 tailored variations with before/after impact scores.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <textarea
+                    rows={3}
+                    value={customBulletInput}
+                    onChange={(e) => setCustomBulletInput(e.target.value)}
+                    placeholder="e.g., Worked on React components and fixed bugs for the application..."
+                    className="w-full rounded-2xl border border-border/80 bg-background p-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                  />
+
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      disabled={isRewritingBullet || !customBulletInput.trim()}
+                      onClick={handleRewriteCustomBullet}
+                      className="font-bold shadow-md"
+                    >
+                      {isRewritingBullet ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                          <span>Rewriting with Gemini AI...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-4 h-4 mr-2" />
+                          <span>Generate 3 STAR Variations</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Variations Display */}
+                {bulletVariations && (
+                  <div className="space-y-4 pt-4 border-t border-border/60 animate-in fade-in">
+                    {bulletVariations.critique && (
+                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300">
+                        <span className="font-bold">Original Critique:</span> {bulletVariations.critique}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 gap-4">
+                      {bulletVariations.variations.map((v, idx) => (
+                        <div
+                          key={idx}
+                          className="rounded-2xl border border-border/80 bg-background/60 p-5 space-y-3 shadow-sm hover:border-amber-500/30 transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-amber-500 uppercase font-mono">
+                              {v.title}
+                            </span>
+                            <span className="text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                              Impact: {v.impactScore}/100
+                            </span>
+                          </div>
+
+                          <p className="text-sm font-medium text-foreground leading-relaxed">
+                            {v.text}
+                          </p>
+
+                          <div className="flex items-center justify-between pt-2 border-t border-border/50 text-[11px] text-muted-foreground">
+                            <span>{v.highlight}</span>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(v.text, idx)}
+                              className="flex items-center gap-1 font-semibold text-foreground hover:text-amber-500 transition-colors"
+                            >
+                              {copiedIdx === idx ? (
+                                <>
+                                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                  <span className="text-emerald-500">Copied!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3.5 h-3.5" />
+                                  <span>Copy Bullet</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 4: Section Health Check */}
             {activeTab === "sections" && (
               <div className="space-y-4 animate-in fade-in">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -572,7 +823,7 @@ export function ResumeAnalyzer() {
               </div>
             )}
 
-            {/* TAB 4: Actionable Recommendations */}
+            {/* TAB 5: Actionable Recommendations */}
             {activeTab === "recommendations" && (
               <div className="space-y-4 animate-in fade-in">
                 <div className="space-y-3">

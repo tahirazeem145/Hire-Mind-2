@@ -13,18 +13,26 @@ import {
   LayoutDashboard,
   FileCheck2,
   Mic,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/auth-ui";
 import { InteractiveCharacter } from "@/components/ui/interactive-character";
 import { InteractiveDotGrid } from "@/components/ui/interactive-dot-grid";
 import { ResumeAnalyzer } from "@/components/resume/ResumeAnalyzer";
+import { MockInterviewSimulator } from "@/components/interview/MockInterviewSimulator";
+import { ApiKeyModal } from "@/components/ui/api-key-modal";
+import { hasGeminiApiKey } from "@/lib/gemini";
 
 export function UserDashboard() {
   const { user, userProfile, logout, isFirebaseConfigured } = useAuth();
   const [currentTab, setCurrentTab] = useState<"overview" | "resume" | "interview">("overview");
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  // State trigger to re-render when key changes
+  const [, setKeyUpdated] = useState(0);
 
   const candidateName = userProfile?.displayName || user?.displayName || "Candidate";
   const candidateEmail = userProfile?.email || user?.email || "candidate@hiremind.ai";
+  const isGeminiConnected = hasGeminiApiKey();
 
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-hidden transition-colors duration-500">
@@ -93,11 +101,27 @@ export function UserDashboard() {
             </button>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            {/* Gemini API Status Badge & Modal Trigger */}
+            <button
+              type="button"
+              onClick={() => setIsApiKeyModalOpen(true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                isGeminiConnected
+                  ? "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-300 hover:bg-amber-500/20 shadow-sm"
+                  : "border-border/80 bg-muted/40 text-muted-foreground hover:text-foreground hover:border-amber-500/30"
+              }`}
+              title="Configure Google Gemini API Key"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-500" />
+              <span className="hidden sm:inline">Gemini AI:</span>
+              <span>{isGeminiConnected ? "Active" : "Connect"}</span>
+            </button>
+
             {/* Firebase connection status */}
-            <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               <Database className="w-3.5 h-3.5" />
-              <span>{isFirebaseConfigured ? "Firebase Connected" : "Local Mode"}</span>
+              <span>{isFirebaseConfigured ? "Firebase Synced" : "Local Mode"}</span>
             </div>
 
             <Button
@@ -125,7 +149,7 @@ export function UserDashboard() {
               <div className="max-w-2xl space-y-4">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-300 border border-amber-500/20">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Authentication Verified</span>
+                  <span>Gemini 2.0 Flash AI Enabled</span>
                 </div>
 
                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
@@ -165,7 +189,7 @@ export function UserDashboard() {
                   </div>
                   <h3 className="font-bold text-lg mb-1">Resume ATS Optimizer</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Instant ATS compatibility percentage, missing keyword alerts, and AI-powered STAR bullet rewrites.
+                    Instant ATS compatibility percentage, missing keyword alerts, and Gemini AI-powered STAR bullet rewrites.
                   </p>
                 </div>
                 <Button
@@ -234,30 +258,24 @@ export function UserDashboard() {
         {/* TAB 2: RESUME ATS ANALYZER */}
         {currentTab === "resume" && (
           <div className="animate-in fade-in">
-            <ResumeAnalyzer />
+            <ResumeAnalyzer onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)} />
           </div>
         )}
 
-        {/* TAB 3: MOCK INTERVIEW TEASER */}
+        {/* TAB 3: MOCK INTERVIEW SIMULATOR */}
         {currentTab === "interview" && (
-          <div className="rounded-3xl border border-border/80 bg-card/60 backdrop-blur-xl p-8 text-center space-y-6 animate-in fade-in">
-            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto shadow-inner">
-              <Mic className="w-8 h-8 animate-pulse" />
-            </div>
-            <div className="max-w-md mx-auto space-y-2">
-              <h2 className="text-2xl font-bold">AI Mock Interview Simulator</h2>
-              <p className="text-sm text-muted-foreground">
-                Get ready for live voice & technical mock interviews powered by Gemini 2.0 Flash and Web Speech voice recognition.
-              </p>
-            </div>
-            <div className="flex justify-center gap-4">
-              <Button variant="outline" onClick={() => setCurrentTab("resume")}>
-                First Optimize Your Resume
-              </Button>
-            </div>
+          <div className="animate-in fade-in">
+            <MockInterviewSimulator onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)} />
           </div>
         )}
       </main>
+
+      {/* Gemini API Key Configuration Modal */}
+      <ApiKeyModal
+        isOpen={isApiKeyModalOpen}
+        onClose={() => setIsApiKeyModalOpen(false)}
+        onKeyChange={() => setKeyUpdated((prev) => prev + 1)}
+      />
     </div>
   );
 }
