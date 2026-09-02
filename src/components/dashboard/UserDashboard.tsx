@@ -27,12 +27,18 @@ export function UserDashboard() {
   const { user, userProfile, logout, isFirebaseConfigured } = useAuth();
   const [currentTab, setCurrentTab] = useState<"overview" | "resume" | "interview">("overview");
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [resumeOpenJd, setResumeOpenJd] = useState(false);
   // State trigger to re-render when key changes
   const [, setKeyUpdated] = useState(0);
 
   const candidateName = userProfile?.displayName || user?.displayName || "Candidate";
   const candidateEmail = userProfile?.email || user?.email || "candidate@hiremind.ai";
   const isGeminiConnected = hasGeminiApiKey();
+
+  const handleOpenResumeWithJd = () => {
+    setResumeOpenJd(true);
+    setCurrentTab("resume");
+  };
 
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-hidden transition-colors duration-500">
@@ -77,7 +83,10 @@ export function UserDashboard() {
             </button>
             <button
               type="button"
-              onClick={() => setCurrentTab("resume")}
+              onClick={() => {
+                setResumeOpenJd(false);
+                setCurrentTab("resume");
+              }}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                 currentTab === "resume"
                   ? "bg-amber-500 text-black shadow-sm"
@@ -149,7 +158,7 @@ export function UserDashboard() {
               <div className="max-w-2xl space-y-4">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-300 border border-amber-500/20">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Gemini 2.0 Flash AI Enabled</span>
+                  <span>Gemini AI Career Platform Live</span>
                 </div>
 
                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
@@ -195,7 +204,10 @@ export function UserDashboard() {
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={() => setCurrentTab("resume")}
+                  onClick={() => {
+                    setResumeOpenJd(false);
+                    setCurrentTab("resume");
+                  }}
                   className="w-full font-medium shadow-md"
                 >
                   Launch ATS Analyzer
@@ -237,7 +249,7 @@ export function UserDashboard() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentTab("resume")}
+                  onClick={handleOpenResumeWithJd}
                   className="w-full font-medium"
                 >
                   Compare Job Post
@@ -258,7 +270,10 @@ export function UserDashboard() {
         {/* TAB 2: RESUME ATS ANALYZER */}
         {currentTab === "resume" && (
           <div className="animate-in fade-in">
-            <ResumeAnalyzer onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)} />
+            <ResumeAnalyzer
+              initialOpenJd={resumeOpenJd}
+              onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
+            />
           </div>
         )}
 

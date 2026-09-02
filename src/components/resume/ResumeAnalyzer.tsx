@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   UploadCloud,
   FileText,
@@ -18,6 +18,8 @@ import {
   FileCheck,
   Copy,
   Check,
+  RotateCcw,
+  Sparkle,
 } from "lucide-react";
 import { Button } from "@/components/ui/auth-ui";
 import {
@@ -34,9 +36,18 @@ import {
 import type { ResumeAnalysisResult } from "@/types/resume";
 import { InteractiveCharacter } from "@/components/ui/interactive-character";
 
+const SAMPLE_BULLET_PRESETS = [
+  "Worked on React frontend components and fixed bugs for the dashboard.",
+  "Built RESTful backend APIs using Node.js and handled MongoDB queries.",
+  "Engineered high-throughput PostgreSQL database queries and indexing.",
+  "Managed AWS cloud deployments and configured GitHub Actions CI/CD.",
+];
+
 export function ResumeAnalyzer({
+  initialOpenJd = false,
   onOpenApiKeyModal,
 }: {
+  initialOpenJd?: boolean;
   onOpenApiKeyModal?: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -44,7 +55,7 @@ export function ResumeAnalyzer({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedRole, setSelectedRole] = useState("frontend-engineer");
   const [customJD, setCustomJD] = useState("");
-  const [showJdInput, setShowJdInput] = useState(false);
+  const [showJdInput, setShowJdInput] = useState(initialOpenJd);
   const [activeTab, setActiveTab] = useState<
     "keywords" | "bullets" | "sections" | "recommendations" | "custom-rewriter"
   >("keywords");
@@ -64,7 +75,10 @@ export function ResumeAnalyzer({
       highlight: string;
     }[];
   } | null>(null);
+
+  // Copied states
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [copiedStarIdx, setCopiedStarIdx] = useState<number | null>(null);
 
   // Process file upload with Gemini or Algorithmic fallback
   const handleFileProcess = async (file: File) => {
@@ -173,13 +187,14 @@ export function ResumeAnalyzer({
   };
 
   // Handle live custom bullet rewriting with Gemini
-  const handleRewriteCustomBullet = async () => {
-    if (!customBulletInput.trim()) return;
+  const handleRewriteCustomBullet = async (textToRewrite?: string) => {
+    const text = textToRewrite || customBulletInput;
+    if (!text.trim()) return;
     setIsRewritingBullet(true);
     try {
       if (hasGeminiApiKey()) {
         const response = await rewriteBulletPointWithGemini(
-          customBulletInput.trim(),
+          text.trim(),
           TECH_ROLES[selectedRole]?.title || "Software Engineer"
         );
         setBulletVariations(response);
@@ -190,7 +205,7 @@ export function ResumeAnalyzer({
           variations: [
             {
               title: "Metric-Driven (STAR)",
-              text: `Spearheaded end-to-end implementation of key product features, reducing page load latency by 38% and driving a 24% increase in user retention.`,
+              text: `Spearheaded end-to-end implementation of key features, reducing page load latency by 38% and driving a 24% increase in user retention.`,
               impactScore: 94,
               highlight: "Quantified performance metrics and executive business impact.",
             },
@@ -217,10 +232,23 @@ export function ResumeAnalyzer({
     }
   };
 
+  // Transfer bullet from list into Live Rewriter tab
+  const handleSendToRewriter = (originalText: string) => {
+    setCustomBulletInput(originalText);
+    setActiveTab("custom-rewriter");
+    handleRewriteCustomBullet(originalText);
+  };
+
   const copyToClipboard = (text: string, index: number) => {
     navigator.clipboard.writeText(text);
     setCopiedIdx(index);
     setTimeout(() => setCopiedIdx(null), 2000);
+  };
+
+  const copyStarBullet = (text: string, index: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedStarIdx(index);
+    setTimeout(() => setCopiedStarIdx(null), 2000);
   };
 
   const getScoreColor = (score: number) => {
@@ -250,6 +278,7 @@ export function ResumeAnalyzer({
           {/* Quick Action: Status & Reset */}
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <button
+              type="button"
               onClick={onOpenApiKeyModal}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border text-xs font-semibold transition-colors ${
                 hasGeminiApiKey()
@@ -403,15 +432,17 @@ export function ResumeAnalyzer({
                 Supports PDF, DOCX, and TXT files. Client-side encrypted & parsed.
               </p>
 
-              <Button
+              <button
                 type="button"
-                variant="default"
-                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
                 disabled={isAnalyzing}
-                className="font-medium shadow-md pointer-events-none"
+                className="px-5 py-2.5 rounded-xl bg-amber-500 text-black text-xs font-bold shadow-md hover:bg-amber-400 transition-colors"
               >
                 {isAnalyzing ? "Processing..." : "Browse Local File"}
-              </Button>
+              </button>
             </div>
           </div>
         </div>
@@ -654,9 +685,19 @@ export function ResumeAnalyzer({
             {/* TAB 2: Resume Bullet Point Optimizer */}
             {activeTab === "bullets" && (
               <div className="space-y-6 animate-in fade-in">
-                <p className="text-xs text-muted-foreground">
-                  Transform passive task descriptions into quantified achievements using the **STAR Formula (Situation, Task, Action, Result)**.
-                </p>
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <p>
+                    Transform passive task descriptions into quantified achievements using the **STAR Formula (Situation, Task, Action, Result)**.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("custom-rewriter")}
+                    className="text-amber-500 font-semibold hover:underline inline-flex items-center gap-1"
+                  >
+                    <span>Try Custom Rewriter Tool</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
 
                 <div className="space-y-4">
                   {result.bulletPoints.map((bp, idx) => (
@@ -689,8 +730,39 @@ export function ResumeAnalyzer({
                         </p>
                       </div>
 
-                      <div className="text-[11px] text-muted-foreground bg-muted/30 p-2 rounded-lg">
-                        <span className="font-semibold text-amber-500">Why this is better:</span> {bp.reason}
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-[11px] text-muted-foreground bg-muted/20 p-2.5 rounded-xl">
+                        <span>
+                          <span className="font-semibold text-amber-500">Why this is better:</span> {bp.reason}
+                        </span>
+
+                        <div className="flex items-center gap-2 ml-auto">
+                          <button
+                            type="button"
+                            onClick={() => handleSendToRewriter(bp.original)}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-300 font-semibold hover:bg-amber-500/20 transition-colors"
+                          >
+                            <Sparkle className="w-3 h-3" />
+                            <span>Variations</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => copyStarBullet(bp.improved, idx)}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border/80 bg-background font-semibold text-foreground hover:border-amber-500/40 transition-colors"
+                          >
+                            {copiedStarIdx === idx ? (
+                              <>
+                                <Check className="w-3 h-3 text-emerald-500" />
+                                <span className="text-emerald-500">Copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3 h-3" />
+                                <span>Copy STAR</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -701,11 +773,33 @@ export function ResumeAnalyzer({
             {/* TAB 3: LIVE CUSTOM BULLET REWRITER */}
             {activeTab === "custom-rewriter" && (
               <div className="space-y-6 animate-in fade-in">
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <h3 className="font-bold text-base">Interactive STAR Bullet Rewriter</h3>
                   <p className="text-xs text-muted-foreground">
-                    Paste any bullet point or project description to generate 3 tailored variations with before/after impact scores.
+                    Paste any bullet point or pick a preset sample below to generate 3 tailored variations with before/after impact scores.
                   </p>
+                </div>
+
+                {/* Preset Chips */}
+                <div className="space-y-2">
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Quick Sample Presets:
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {SAMPLE_BULLET_PRESETS.map((preset, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setCustomBulletInput(preset);
+                          handleRewriteCustomBullet(preset);
+                        }}
+                        className="text-xs px-3 py-1.5 rounded-xl border border-border/70 bg-background/60 hover:border-amber-500/40 hover:bg-amber-500/5 text-left transition-colors truncate max-w-xs sm:max-w-md"
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -717,12 +811,26 @@ export function ResumeAnalyzer({
                     className="w-full rounded-2xl border border-border/80 bg-background p-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                   />
 
-                  <div className="flex justify-end">
+                  <div className="flex items-center justify-between">
+                    {customBulletInput && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomBulletInput("");
+                          setBulletVariations(null);
+                        }}
+                        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        <span>Clear Input</span>
+                      </button>
+                    )}
+
                     <Button
                       size="sm"
                       disabled={isRewritingBullet || !customBulletInput.trim()}
-                      onClick={handleRewriteCustomBullet}
-                      className="font-bold shadow-md"
+                      onClick={() => handleRewriteCustomBullet()}
+                      className="font-bold shadow-md ml-auto"
                     >
                       {isRewritingBullet ? (
                         <>
@@ -830,12 +938,31 @@ export function ResumeAnalyzer({
                   {result.topRecommendations.map((rec, idx) => (
                     <div
                       key={idx}
-                      className="p-4 rounded-2xl border border-border/80 bg-background/60 flex items-center gap-3 text-xs sm:text-sm font-medium"
+                      className="p-4 rounded-2xl border border-border/80 bg-background/60 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm font-medium"
                     >
-                      <div className="w-6 h-6 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold font-mono text-xs shrink-0">
-                        {idx + 1}
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold font-mono text-xs shrink-0">
+                          {idx + 1}
+                        </div>
+                        <span>{rec}</span>
                       </div>
-                      <span>{rec}</span>
+
+                      {/* Jump button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (rec.toLowerCase().includes("keyword")) {
+                            setActiveTab("keywords");
+                          } else if (rec.toLowerCase().includes("quantif") || rec.toLowerCase().includes("metric")) {
+                            setActiveTab("bullets");
+                          } else {
+                            setActiveTab("sections");
+                          }
+                        }}
+                        className="px-3 py-1 rounded-lg border border-border/70 text-xs text-muted-foreground hover:text-foreground hover:border-amber-500/40 transition-colors shrink-0"
+                      >
+                        Take Action ➜
+                      </button>
                     </div>
                   ))}
                 </div>

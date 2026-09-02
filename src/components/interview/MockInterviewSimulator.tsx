@@ -17,6 +17,9 @@ import {
   RotateCcw,
   Calendar,
   VolumeX,
+  Copy,
+  Check,
+  Printer,
 } from "lucide-react";
 import { Button } from "@/components/ui/auth-ui";
 import {
@@ -82,6 +85,13 @@ const FALLBACK_QUESTIONS: Record<string, InterviewQuestion[]> = {
   ],
 };
 
+const STAR_ANSWER_STARTERS = [
+  "Situation: In my recent project at...",
+  "Task: I was responsible for solving...",
+  "Action: I engineered a solution by implementing...",
+  "Result: This reduced latency by 40% and served 100K+ users.",
+];
+
 export function MockInterviewSimulator({
   onOpenApiKeyModal,
 }: {
@@ -105,6 +115,10 @@ export function MockInterviewSimulator({
   const [showHints, setShowHints] = useState(false);
   const [showJdInput, setShowJdInput] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
+
+  // Copied states
+  const [copiedModelAnswer, setCopiedModelAnswer] = useState(false);
+  const [copiedSprint, setCopiedSprint] = useState(false);
 
   // Speech recognition ref
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -267,7 +281,7 @@ export function MockInterviewSimulator({
         evaluation = {
           score: Number(score.toFixed(1)),
           starRating: Math.round(score / 2),
-          summary: "Good effort covering the conceptual baseline. Adding specific production metrics and architectural trade-offs would raise this to a senior-level answer.",
+          summary: "Good effort covering the conceptual baseline. Adding specific production metrics and architectural trade-offs will raise this to a senior-level answer.",
           strengths: [
             "Demonstrated core conceptual vocabulary.",
             "Clearly articulated the primary approach.",
@@ -277,7 +291,7 @@ export function MockInterviewSimulator({
             "Structure the response explicitly around the STAR formula (Situation, Task, Action, Result).",
           ],
           idealModelAnswer:
-            "In my previous project, we faced this exact challenge. First, I analyzed the profiling metrics which showed 300ms bottleneck. I then designed a solution by decoupling the state and implementing memoization. This reduced latency by 45% for 100K daily active users.",
+            "In my previous project, we faced this exact challenge. First, I analyzed the profiling metrics which showed a 300ms bottleneck. I then designed a solution by decoupling the state and implementing memoization. This reduced latency by 45% for 100K daily active users.",
           technicalAccuracyScore: 82,
           communicationScore: 78,
         };
@@ -380,6 +394,22 @@ export function MockInterviewSimulator({
     }
   };
 
+  const handleCopyModelAnswer = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedModelAnswer(true);
+    setTimeout(() => setCopiedModelAnswer(false), 2000);
+  };
+
+  const handleCopySprintPlan = () => {
+    if (!session.finalReport?.recommendedPrepDays) return;
+    const text = session.finalReport.recommendedPrepDays
+      .map((d) => `Day ${d.day}: ${d.focus} - ${d.task}`)
+      .join("\n");
+    navigator.clipboard.writeText(text);
+    setCopiedSprint(true);
+    setTimeout(() => setCopiedSprint(false), 2000);
+  };
+
   const formatTimer = (secs: number) => {
     const mins = Math.floor(secs / 60);
     const remaining = secs % 60;
@@ -410,6 +440,7 @@ export function MockInterviewSimulator({
           {/* Gemini API Status Action */}
           <div className="flex flex-wrap items-center gap-3">
             <button
+              type="button"
               onClick={onOpenApiKeyModal}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl border text-xs font-semibold transition-colors ${
                 hasGeminiApiKey()
@@ -434,8 +465,31 @@ export function MockInterviewSimulator({
             </p>
           </div>
 
+          {/* Quick Select Preset Chips */}
+          <div className="space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Quick Role Presets:
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(TECH_ROLES).map(([key, role]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setSession((prev) => ({ ...prev, roleKey: key }))}
+                  className={`text-xs px-3 py-1.5 rounded-xl border transition-all ${
+                    session.roleKey === key
+                      ? "bg-amber-500 text-black font-bold border-amber-500 shadow-sm"
+                      : "bg-background/60 border-border/70 hover:border-amber-500/40"
+                  }`}
+                >
+                  {role.title.split("/")[0]}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Target Role */}
+            {/* Target Role Dropdown */}
             <div className="space-y-2">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Target Role
@@ -584,7 +638,7 @@ export function MockInterviewSimulator({
                     ? "border-amber-500 bg-amber-500/20 text-amber-500 animate-pulse"
                     : "border-border/80 bg-muted/30 text-muted-foreground hover:text-foreground"
                 }`}
-                title="Listen to question"
+                title="Listen to question via voice"
               >
                 {isSpeaking ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
               </button>
@@ -625,7 +679,7 @@ export function MockInterviewSimulator({
           {/* Response Box & Speech-to-Text */}
           {session.status === "in-progress" && (
             <div className="rounded-3xl border border-border/80 bg-card/70 backdrop-blur-xl p-6 sm:p-8 shadow-xl space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Your Answer (Voice or Type)
                 </label>
@@ -654,6 +708,25 @@ export function MockInterviewSimulator({
                 </div>
               </div>
 
+              {/* Quick Answer Starter Chips */}
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                <span className="text-[11px] text-muted-foreground py-1">STAR Starters:</span>
+                {STAR_ANSWER_STARTERS.map((starter, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() =>
+                      setCurrentAnswerText((prev) =>
+                        prev ? `${prev}\n\n${starter} ` : `${starter} `
+                      )
+                    }
+                    className="text-[11px] px-2.5 py-1 rounded-lg border border-border/60 bg-muted/20 hover:border-amber-500/40 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    + {starter.split(":")[0]}
+                  </button>
+                ))}
+              </div>
+
               <textarea
                 rows={6}
                 value={currentAnswerText}
@@ -663,9 +736,20 @@ export function MockInterviewSimulator({
               />
 
               <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-                <span className="text-xs font-mono text-muted-foreground">
-                  Word Count: {currentAnswerText.trim().split(/\s+/).filter(Boolean).length} words
-                </span>
+                <div className="flex items-center gap-3 text-xs font-mono text-muted-foreground">
+                  <span>
+                    Word Count: {currentAnswerText.trim().split(/\s+/).filter(Boolean).length} words
+                  </span>
+                  {currentAnswerText && (
+                    <button
+                      type="button"
+                      onClick={() => setCurrentAnswerText("")}
+                      className="text-muted-foreground hover:text-destructive text-xs"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
 
                 <Button
                   size="default"
@@ -770,12 +854,31 @@ export function MockInterviewSimulator({
 
               {/* Ideal Model Answer */}
               {currentEvaluation.idealModelAnswer && (
-                <div className="p-5 rounded-2xl bg-background/60 border border-border/80 space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-purple-500">
-                    <Award className="w-4 h-4" />
-                    <span>Ideal FAANG-Caliber STAR Model Answer</span>
+                <div className="p-5 rounded-2xl bg-background/60 border border-border/80 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-bold text-purple-500">
+                      <Award className="w-4 h-4" />
+                      <span>Ideal FAANG-Caliber STAR Model Answer</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyModelAnswer(currentEvaluation.idealModelAnswer)}
+                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground font-semibold"
+                    >
+                      {copiedModelAnswer ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-500" />
+                          <span className="text-emerald-500">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy Model Answer</span>
+                        </>
+                      )}
+                    </button>
                   </div>
-                  <p className="text-xs text-foreground/90 leading-relaxed font-mono bg-muted/30 p-3 rounded-xl">
+                  <p className="text-xs text-foreground/90 leading-relaxed font-mono bg-muted/30 p-3.5 rounded-xl">
                     {currentEvaluation.idealModelAnswer}
                   </p>
                 </div>
@@ -866,9 +969,29 @@ export function MockInterviewSimulator({
           {/* 7-Day Targeted Preparation Roadmap */}
           {session.finalReport.recommendedPrepDays && (
             <div className="rounded-3xl border border-border/80 bg-card/70 backdrop-blur-xl p-6 sm:p-8 shadow-xl space-y-6">
-              <div className="flex items-center gap-2.5 font-bold text-lg">
-                <Calendar className="w-5 h-5 text-amber-500" />
-                <h2>Personalized 7-Day Interview Preparation Sprint</h2>
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-2.5 font-bold text-lg">
+                  <Calendar className="w-5 h-5 text-amber-500" />
+                  <h2>Personalized 7-Day Interview Preparation Sprint</h2>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleCopySprintPlan}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/80 text-xs font-semibold hover:bg-accent transition-colors"
+                >
+                  {copiedSprint ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                      <span className="text-emerald-500">Plan Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy 7-Day Plan</span>
+                    </>
+                  )}
+                </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -894,8 +1017,18 @@ export function MockInterviewSimulator({
             </div>
           )}
 
-          {/* Reset / Start New */}
-          <div className="flex justify-center pt-4">
+          {/* Action Buttons: Retake & Print */}
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => window.print()}
+              className="gap-2 font-bold shadow-md"
+            >
+              <Printer className="w-4 h-4" />
+              <span>Print / Save Scorecard</span>
+            </Button>
+
             <Button
               size="lg"
               onClick={() =>
